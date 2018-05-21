@@ -6,4 +6,5 @@ var (
 )
 
 type Utility struct {
+
 }

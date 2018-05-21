@@ -24,8 +24,6 @@ func GetUsers(c *gin.Context) {
 	c.JSON(200, "hello world")
 }
 
-
-
 func setupRouter(router *gin.Engine)  {
 	router.POST("/account/add", services.AddAccount)
 	router.GET("/account/add", services.AddAccount)
@@ -39,7 +37,6 @@ func setupRouter(router *gin.Engine)  {
 	//router.POST("/ptcaccounts/accounts/v1/lvl/:level", services.AddAccountWithLevelHandler(maxlevel))
 	router.PATCH("/ptcaccounts/accounts/v1/release", services.ReleaseAccount)
 	router.GET("/ptcaccounts/accounts/v1/request", services.GetAccountBySystemIdAndLevelAndMark)
-
 }
 func main() {
 	env := ""

@@ -42,15 +42,27 @@ type PogoAccount struct {
 	Lures              int        `json:"lures"`
 }
 
-type Pokemon struct {
+type BaseMon struct{
+	Type string
 	gorm.Model
+	Latitude            float64 `json:"latitude"`
+	Longitude           float64 `json:"longitude"`
+	Address string
+	State string
+	County string
+	Country string
+	PokemonLevel        int     `json:"pokemon_level"`
+	ChannelId int
+	GymName string
+	TeamId int
+}
+
+type PokemonData struct {
+	BaseMon
 	EncounterID         string  `json:"encounter_id"`
 	SpawnpointID        string  `json:"spawnpoint_id"`
 	PokemonID           int     `json:"pokemon_id"`
-	PokemonLevel        int     `json:"pokemon_level"`
 	PlayerLevel         int     `json:"player_level"`
-	Latitude            float64 `json:"latitude"`
-	Longitude           float64 `json:"longitude"`
 	DisappearTime       int     `json:"disappear_time"`
 	LastModifiedTime    int64   `json:"last_modified_time"`
 	TimeUntilHiddenMs   int     `json:"time_until_hidden_ms"`
@@ -61,6 +73,7 @@ type Pokemon struct {
 	CpMultiplier        float64 `json:"cp_multiplier"`
 	Form                int     `json:"form"`
 	Cp                  int     `json:"cp"`
+	Iv 					float64 `json:iv`
 	IndividualAttack    int     `json:"individual_attack"`
 	IndividualDefense   int     `json:"individual_defense"`
 	IndividualStamina   int     `json:"individual_stamina"`
@@ -69,4 +82,9 @@ type Pokemon struct {
 	Height              int     `json:"height"`
 	Weight              int     `json:"weight"`
 	Gender              int     `json:"gender"`
+	Size                string  `json:"size"`
+	TinyRat             string  `json:tinyrat`
+	BigKarp             string  `json:bigkarp`
+	gmaps               string  `json:gmaps`
+	applemaps           string  `json:applemaps`
 }

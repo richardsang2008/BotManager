@@ -29,7 +29,7 @@ func (s *DataAccessLay) New(user, pass, host, dbname string) {
 		}
 		return defaultTableName
 	}
-	DataBase.CreateTable(&model.PogoAccount{}, &model.Pokemon{})
+	DataBase.CreateTable(&model.PogoAccount{}, &model.PokemonData{})
 }
 func (s *DataAccessLay) Close() {
 	utility.MLog.Info("Closing database")

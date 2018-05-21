@@ -38,7 +38,15 @@ Thumbs.db
 #folder#
 ##############################
 .git
+cache/*
+logs/*
+*.json
+# IDEs
 .idea
+.vs/*
+# Runtime
+cache/*
+logs/*
+
 vendor
 docs
-appconfig.json
