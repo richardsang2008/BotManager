@@ -1,4 +1,5 @@
 package utility
+
 var (
 	MLog   Log
 	MCache Cache
@@ -6,4 +7,3 @@ var (
 
 type Utility struct {
 }
-

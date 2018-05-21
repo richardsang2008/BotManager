@@ -1,7 +1,8 @@
 package utility
+
 import (
-	"time"
 	"github.com/patrickmn/go-cache"
+	"time"
 )
 
 type Cache struct {
