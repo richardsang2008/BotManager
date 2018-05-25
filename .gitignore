@@ -38,9 +38,7 @@ Thumbs.db
 #folder#
 ##############################
 .git
-cache/*
-logs/*
-*.json
+
 # IDEs
 .idea
 .vs/*

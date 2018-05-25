@@ -42,19 +42,31 @@ type PogoAccount struct {
 	Lures              int        `json:"lures"`
 }
 
-type BaseMon struct{
+type BaseMon struct {
 	Type string
 	gorm.Model
-	Latitude            float64 `json:"latitude"`
-	Longitude           float64 `json:"longitude"`
-	Address string
-	State string
-	County string
-	Country string
-	PokemonLevel        int     `json:"pokemon_level"`
-	ChannelId int
-	GymName string
-	TeamId int
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	Address      string
+	State        string
+	County       string
+	Country      string
+	PokemonLevel int `json:"pokemon_level"`
+	ChannelId    int
+	GymName      string
+	TeamId       int
+}
+
+type BaseStats struct {
+	Attack     int     `json:"attack"`
+	Defense    int     `json:"defense"`
+	Stamina    int     `json:"stamina"`
+	Type1      int     `json:"type1"`
+	Type2      int     `json:"type2"`
+	Legendary  bool    `json:"legendary"`
+	Generation int     `json:"generation"`
+	Weight     float64 `json:"weight"`
+	Height     float64 `json:"height"`
 }
 
 type PokemonData struct {
@@ -73,7 +85,7 @@ type PokemonData struct {
 	CpMultiplier        float64 `json:"cp_multiplier"`
 	Form                int     `json:"form"`
 	Cp                  int     `json:"cp"`
-	Iv 					float64 `json:iv`
+	Iv                  float64 `json:iv`
 	IndividualAttack    int     `json:"individual_attack"`
 	IndividualDefense   int     `json:"individual_defense"`
 	IndividualStamina   int     `json:"individual_stamina"`
