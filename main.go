@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"time"
 
+	"bufio"
 	"context"
 	"github.com/richardsang2008/BotManager/controller"
 	"github.com/richardsang2008/BotManager/model"
@@ -17,10 +18,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 )
 
 func GetUsers(c *gin.Context) {
-	//	log.Debug("I am here")
+
 	c.JSON(200, "hello world")
 }
 
@@ -79,10 +81,7 @@ func main() {
 		}
 		envLogLevel := fmt.Sprintf("%s.log.level", env)
 		envLogFile := fmt.Sprintf("%s.log.file", env)
-		envDataBaseName := fmt.Sprintf("%s.database.database", env)
-		envDataBaseUser := fmt.Sprintf("%s.database.username", env)
-		envDataBasePass := fmt.Sprintf("%s.database.password", env)
-		envDataBaseAddress := fmt.Sprintf("%s.database.host", env)
+
 		envServerPort := fmt.Sprintf("%s.server.port", env)
 		envServerHost := fmt.Sprintf("%s.server.host", env)
 
@@ -103,13 +102,11 @@ func main() {
 			level = model.ERROR
 		}
 		logFile := viper.GetString(envLogFile)
-		dataBaseName := viper.GetString(envDataBaseName)
-		dataBaseUser := viper.GetString(envDataBaseUser)
-		dataBasePass := viper.GetString(envDataBasePass)
-		dataBaseHost := viper.GetString(envDataBaseAddress)
+
+		//init the cache
+		utility.MCache.New(5, 10)
 		serverPort := viper.GetString(envServerPort)
 		serverHost := viper.GetString(envServerHost)
-
 		utility.MLog.New(logFile, level)
 		gin.DisableConsoleColor()
 		f, _ := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -121,7 +118,6 @@ func main() {
 			v1.GET("/users", GetUsers)
 		}
 		setupRouter(router)
-
 		//load the pokemon data
 		pokemonMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "pokemon")
 		//load the move data
@@ -151,51 +147,95 @@ func main() {
 		//load the misc data
 		miscMap, _ := utility.MUtility.LoadDataToStringMapString(ConfigPath, PokemonEn, "misc")
 		//load the cp_multipliers
-		cpMultipliersMap, _ := utility.MUtility.LoadDataToFloat64MapString(ConfigPath, CpMultipliers, "cp_multipliers")
+		//cpMultipliersMap, _ := utility.MUtility.LoadDataToFloat64MapString(ConfigPath, CpMultipliers, "cp_multipliers")
 		//load the base stats data
-		baseStatsMap, _ := utility.MUtility.LoadDataToIntMapInterface(ConfigPath, BaseStats, "base_stats")
+		//baseStatsMap, _ := utility.MUtility.LoadDataToIntMapInterface(ConfigPath, BaseStats, "base_stats")
 
-		utility.MLog.Info(pokemonMap[29])
-		utility.MLog.Info(moveMap[135])
-		utility.MLog.Info(rarityMap[2])
-		utility.MLog.Info(sizesMap[3])
-		utility.MLog.Info(teamsMap[2])
-		utility.MLog.Info(typesMap[15])
-		utility.MLog.Info(weatherMap[6])
-		utility.MLog.Info(forms201Map[10])
-		utility.MLog.Info(forms351Map[31])
-		utility.MLog.Info(forms386Map[35])
-		utility.MLog.Info(dayOrNightMap[1])
-		utility.MLog.Info(leadersMap[3])
-		utility.MLog.Info(severityMap[3])
-		utility.MLog.Info(miscMap["boosted"])
-		utility.MLog.Info(cpMultipliersMap[7.5])
-		utility.MLog.Info(baseStatsMap[5])
+		utility.MLog.Debug(pokemonMap[29])
+		utility.MLog.Debug(moveMap[135])
+		utility.MLog.Debug(rarityMap[2])
+		utility.MLog.Debug(sizesMap[3])
+		utility.MLog.Debug(teamsMap[2])
+		utility.MLog.Debug(typesMap[15])
+		utility.MLog.Debug(weatherMap[6])
+		utility.MLog.Debug(forms201Map[10])
+		utility.MLog.Debug(forms351Map[31])
+		utility.MLog.Debug(forms386Map[35])
+		utility.MLog.Debug(dayOrNightMap[1])
+		utility.MLog.Debug(leadersMap[3])
+		utility.MLog.Debug(severityMap[3])
+		utility.MLog.Debug(miscMap["boosted"])
+		//utility.MLog.Debug(cpMultipliersMap[7.5])
+		//utility.MLog.Debug(baseStatsMap[5])
+		//get local time
+		//loc, _ := time.LoadLocation("America/Los_Angeles")
+		//t := time.Now().In(loc)
+		//utility.MLog.Info(t)
 
-		loc, _ := time.LoadLocation("America/Los_Angeles")
-		t := time.Now().In(loc)
-		utility.MLog.Info(t)
-
-
-		// find the great circle distance between 2 lan lng
-		dist := utility.MPokeUtility.CalculateTwoPointsDistanceInMiles(34.117671,-118.073250,34.114826,-118.075295)
-		utility.MLog.Info("great circle distance in miles: ", dist)
-		//test locate snorlax
-		id, err := utility.MPokeUtility.LocateValueInKeyWithMapIntString("Hoopa", pokemonMap)
-		if err != nil {
-			utility.MLog.Error(err)
+		//load the testing data from testdata.txt
+		f, err1 := os.Open("test/testdata.txt")
+		if err1 != nil {
+			utility.MLog.Error(err1)
 		}
-		utility.MLog.Debug("Hoopa id is ", id)
-
-		moveid, err := utility.MPokeUtility.LocateValueInKeyWithMapIntString("Petal Blizzard", moveMap)
-		if err != nil {
-			utility.MLog.Error(err)
+		defer f.Close()
+		f2, err2 := os.Open("test/filters.json")
+		if err2 != nil {
+			utility.MLog.Error(err2)
 		}
-		utility.MLog.Debug("Petal Blizzard id is ", moveid)
+		scanner2 := bufio.NewScanner(f2)
+		defer f2.Close()
+		filterstr := ""
+		for scanner2.Scan() {
+			line := scanner2.Text()
+			if !strings.HasPrefix(line,"#") || len(line)==0 {
+				filterstr = line
+			}
+		}
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			aline := scanner.Text()
+			if !strings.HasPrefix(aline, "#") || len(aline) ==0 {
+				general,_,_ := controller.FilterPokeMinerInput([]byte(aline), []byte(filterstr), pokemonMap, moveMap, teamsMap)
+				if err != nil {
+					utility.MLog.Error(err)
+				} else {
+					switch t := general.(type) {
+					case *model.PokeMinerMonMessage:
+						mon := general.(*model.PokeMinerMonMessage)
+						utility.MLog.Debug("I am pokemessage  %f , %.2f", *(mon.Message.PokemonID), *(mon.Message.Iv))
+					case *model.PokeMinerRaidMessage:
+						mon := general.(*model.PokeMinerRaidMessage)
+						if mon.Message.Cp == nil || *(mon.Message.Cp) ==0 {
+							utility.MLog.Debug("I am eggmessage", mon.Message.Latitude)
+						} else {
+							utility.MLog.Debug("I am raidmessage", mon.Message.Latitude)
+						}
 
+					case *model.PokeMinerGymMessage:
+						mon := general.(*model.PokeMinerGymMessage)
+						utility.MLog.Debug("I am gymmessage", mon.Message.Latitude)
+						if mon.Message.Guards == nil {
+							utility.MLog.Debug("there is no guard data")
+						} else {
+							utility.MLog.Debug("guard 0 id ", mon.Message.Guards[0].PokemonID)
+						}
+					default:
+						_ = t
+						utility.MLog.Debug("nothing")
+					}
+				}
+			}
+		}
+		/*envDataBaseName := fmt.Sprintf("%s.database.database", env)
+		envDataBaseUser := fmt.Sprintf("%s.database.username", env)
+		envDataBasePass := fmt.Sprintf("%s.database.password", env)
+		envDataBaseAddress := fmt.Sprintf("%s.database.host", env)
+		dataBaseName := viper.GetString(envDataBaseName)
+		dataBaseUser := viper.GetString(envDataBaseUser)
+		dataBasePass := viper.GetString(envDataBasePass)
+		dataBaseHost := viper.GetString(envDataBaseAddress)
 		controller.Data.New(dataBaseUser, dataBasePass, dataBaseHost, dataBaseName)
-
-		defer controller.Data.Close()
+		defer controller.Data.Close()*/
 		address := fmt.Sprintf("%v:%s", serverHost, serverPort)
 		srv := &http.Server{
 			Addr:    address,

@@ -78,7 +78,6 @@ func (s *DataAccessLay) GetAccountByLevel(minlevel, maxlevel int) (*[]model.Pogo
 
 func (s *DataAccessLay) UpdateAccount(account model.PogoAccount) (*string, error) {
 	utility.MLog.Debug("DataAccessLay UpdateAccount starting")
-
 	DataBase.Model(&account).Updates(account)
 	ret := fmt.Sprint(account.ID)
 	utility.MLog.Debug("DataAccessLay UpdateAccount end")

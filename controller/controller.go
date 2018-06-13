@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"github.com/richardsang2008/BotManager/data"
 	"github.com/richardsang2008/BotManager/model"
 	"github.com/richardsang2008/BotManager/utility"
@@ -63,7 +64,6 @@ func GetNextUseableAccountByLevel(minlevel, maxlevel int) (*[]model.PogoAccount,
 		} else {
 			return nil, nil
 		}
-
 	}
 }
 func UpdateAccountBySpecialFields(account model.PogoAccount) (*string, error) {
@@ -81,4 +81,27 @@ func UpdateAccountSetSystemIdToNull(account model.PogoAccount) {
 	Data.UpdateAccountSetSystemIdToNull(account)
 }
 
+func FilterPokeMinerInput(data []byte, userfilters []byte, pokemonMap map[int]string, moveMap map[int]string, teamsMap map[int]string) (interface{}, bool, error) {
+	u := utility.PokeUtility{}
+	//input pokeminer message
+	inputData, isWithinTime, err := u.ParsePokeMinerInput(data,true)
+	//make sure the data disappear time is > now
+	if isWithinTime != nil && *isWithinTime == false {
+		return inputData, false, nil
+	}
 
+	if err != nil {
+		utility.MLog.Error(err)
+	}
+	//load the userfilters into filters
+	filters := &model.Filters{}
+	if err := json.Unmarshal(userfilters, &filters); err != nil {
+		utility.MLog.Error(err)
+	}
+	filters = u.BackFillIdForFilters(filters, pokemonMap, moveMap, teamsMap)
+	//utility.MLog.Debug(filters)
+	//now let's try to filter it
+	isOkToNotify := u.ApplyFiltersToMessage(inputData, filters)
+	utility.MLog.Debug(isOkToNotify)
+	return inputData, isOkToNotify, nil
+}

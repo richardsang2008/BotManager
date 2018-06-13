@@ -99,10 +99,10 @@ func (u *Utility) LoadDataToIntMapInterface(configPath string, filename string, 
 		v.OnConfigChange(func(e fsnotify.Event) {
 			MLog.Info("Config file changed:", e.Name)
 		})
-		dmap :=v.GetStringMap(stringname)
-		x:= make (map[int] interface{})
-		for k,v :=range dmap {
-			intk,_ :=strconv.Atoi(k)
+		dmap := v.GetStringMap(stringname)
+		x := make(map[int]interface{})
+		for k, v := range dmap {
+			intk, _ := strconv.Atoi(k)
 			x[intk] = v
 		}
 		return x, nil
