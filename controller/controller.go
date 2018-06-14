@@ -81,15 +81,18 @@ func UpdateAccountSetSystemIdToNull(account model.PogoAccount) {
 	Data.UpdateAccountSetSystemIdToNull(account)
 }
 
-func FilterPokeMinerInput(data []byte, userfilters []byte, pokemonMap map[int]string, moveMap map[int]string, teamsMap map[int]string) (interface{}, bool, error) {
+func FilterPokeMinerInput(data []byte, userfilters []byte, genfence_zones []model.GeoFences, pokemonMap map[int]string, moveMap map[int]string, teamsMap map[int]string) (interface{}, bool, error) {
 	u := utility.PokeUtility{}
 	//input pokeminer message
-	inputData, isWithinTime, err := u.ParsePokeMinerInput(data,true)
+	inputData, isWithinTime, regionstr,err := u.ParsePokeMinerInput(data, genfence_zones,true)
+	if regionstr == nil || *regionstr == "" {
+		utility.MLog.Debug("Region can not be determined or not within the region so no filter" )
+		return inputData, false, nil
+	}
 	//make sure the data disappear time is > now
 	if isWithinTime != nil && *isWithinTime == false {
 		return inputData, false, nil
 	}
-
 	if err != nil {
 		utility.MLog.Error(err)
 	}
@@ -101,7 +104,14 @@ func FilterPokeMinerInput(data []byte, userfilters []byte, pokemonMap map[int]st
 	filters = u.BackFillIdForFilters(filters, pokemonMap, moveMap, teamsMap)
 	//utility.MLog.Debug(filters)
 	//now let's try to filter it
-	isOkToNotify := u.ApplyFiltersToMessage(inputData, filters)
-	utility.MLog.Debug(isOkToNotify)
-	return inputData, isOkToNotify, nil
+	//if the region does not match do not filter
+	if  filters.UserRegion.Region == *(regionstr) {
+		isOkToNotify := u.ApplyFiltersToMessage(inputData, filters)
+		utility.MLog.Debug(isOkToNotify)
+		return inputData, isOkToNotify, nil
+	} else {
+		utility.MLog.Debug("Region not match so no data will be sent")
+		return inputData, false, nil
+	}
+
 }

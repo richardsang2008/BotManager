@@ -7,10 +7,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/richardsang2008/BotManager/utility"
 	"github.com/spf13/viper"
+	"github.com/weilunwu/go-geofence"
 	"time"
 
 	"bufio"
 	"context"
+	"encoding/json"
+	"github.com/kellydunn/golang-geo"
 	"github.com/richardsang2008/BotManager/controller"
 	"github.com/richardsang2008/BotManager/model"
 	"github.com/richardsang2008/BotManager/services"
@@ -81,11 +84,10 @@ func main() {
 		}
 		envLogLevel := fmt.Sprintf("%s.log.level", env)
 		envLogFile := fmt.Sprintf("%s.log.file", env)
-
 		envServerPort := fmt.Sprintf("%s.server.port", env)
 		envServerHost := fmt.Sprintf("%s.server.host", env)
-
 		logLevel := viper.GetString(envLogLevel)
+
 		var level model.LogLevel
 		switch logLevel {
 		case "debug":
@@ -107,6 +109,41 @@ func main() {
 		utility.MCache.New(5, 10)
 		serverPort := viper.GetString(envServerPort)
 		serverHost := viper.GetString(envServerHost)
+		//load the regions inform
+		fr, errr := os.Open("config/regions.json")
+		if errr != nil {
+			utility.MLog.Error(errr)
+		}
+		defer fr.Close()
+		scannerr := bufio.NewScanner(fr)
+		filterrstr := ""
+		for scannerr.Scan() {
+			line := scannerr.Text()
+			if !strings.HasPrefix(line, "#") || len(line) == 0 {
+				filterrstr = line
+			}
+		}
+		regions := &model.Regions{}
+		json.Unmarshal([]byte(filterrstr), regions)
+		//create a geofence
+
+		var genfence_zones []model.GeoFences
+
+		if regions.Regions != nil {
+			var geo_Fence = model.GeoFences{}
+			for _, element := range regions.Regions {
+				geo_Fence.Region = element.Region
+				polygon := []*geo.Point{}
+				for _, zone := range element.Zone {
+					d := geo.NewPoint(zone.Latitude, zone.Longitude)
+					polygon = append(polygon, d)
+
+				}
+				x_geofence := geofence.NewGeofence([][]*geo.Point{polygon, []*geo.Point{}})
+				geo_Fence.Geofence = x_geofence
+				genfence_zones = append(genfence_zones, geo_Fence)
+			}
+		}
 		utility.MLog.New(logFile, level)
 		gin.DisableConsoleColor()
 		f, _ := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -187,41 +224,45 @@ func main() {
 		filterstr := ""
 		for scanner2.Scan() {
 			line := scanner2.Text()
-			if !strings.HasPrefix(line,"#") || len(line)==0 {
+			if !strings.HasPrefix(line, "#") || len(line) == 0 {
 				filterstr = line
 			}
 		}
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
 			aline := scanner.Text()
-			if !strings.HasPrefix(aline, "#") || len(aline) ==0 {
-				general,_,_ := controller.FilterPokeMinerInput([]byte(aline), []byte(filterstr), pokemonMap, moveMap, teamsMap)
-				if err != nil {
-					utility.MLog.Error(err)
-				} else {
-					switch t := general.(type) {
-					case *model.PokeMinerMonMessage:
-						mon := general.(*model.PokeMinerMonMessage)
-						utility.MLog.Debug("I am pokemessage  %f , %.2f", *(mon.Message.PokemonID), *(mon.Message.Iv))
-					case *model.PokeMinerRaidMessage:
-						mon := general.(*model.PokeMinerRaidMessage)
-						if mon.Message.Cp == nil || *(mon.Message.Cp) ==0 {
-							utility.MLog.Debug("I am eggmessage", mon.Message.Latitude)
-						} else {
-							utility.MLog.Debug("I am raidmessage", mon.Message.Latitude)
-						}
+			if !strings.HasPrefix(aline, "#") || len(aline) == 0 {
+				general, isNotifyToUser, _ := controller.FilterPokeMinerInput([]byte(aline), []byte(filterstr), genfence_zones, pokemonMap, moveMap, teamsMap)
+				if isNotifyToUser {
+					utility.MLog.Debug("Send to user message")
 
-					case *model.PokeMinerGymMessage:
-						mon := general.(*model.PokeMinerGymMessage)
-						utility.MLog.Debug("I am gymmessage", mon.Message.Latitude)
-						if mon.Message.Guards == nil {
-							utility.MLog.Debug("there is no guard data")
-						} else {
-							utility.MLog.Debug("guard 0 id ", mon.Message.Guards[0].PokemonID)
+					if err != nil {
+						utility.MLog.Error(err)
+					} else {
+						switch t := general.(type) {
+						case *model.PokeMinerMonMessage:
+							mon := general.(*model.PokeMinerMonMessage)
+							utility.MLog.Debug("I am pokemessage  %f , %.2f", *(mon.Message.PokemonID), *(mon.Message.Iv))
+						case *model.PokeMinerRaidMessage:
+							mon := general.(*model.PokeMinerRaidMessage)
+							if mon.Message.Cp == nil || *(mon.Message.Cp) == 0 {
+								utility.MLog.Debug("I am eggmessage", mon.Message.Latitude)
+							} else {
+								utility.MLog.Debug("I am raidmessage", mon.Message.Latitude)
+							}
+
+						case *model.PokeMinerGymMessage:
+							mon := general.(*model.PokeMinerGymMessage)
+							utility.MLog.Debug("I am gymmessage", mon.Message.Latitude)
+							if mon.Message.Guards == nil {
+								utility.MLog.Debug("there is no guard data")
+							} else {
+								utility.MLog.Debug("guard 0 id ", mon.Message.Guards[0].PokemonID)
+							}
+						default:
+							_ = t
+							utility.MLog.Debug("nothing")
 						}
-					default:
-						_ = t
-						utility.MLog.Debug("nothing")
 					}
 				}
 			}

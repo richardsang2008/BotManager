@@ -1,149 +1,145 @@
 {
-  "dev":{
-    "enable":true,
-    "log":{
-      "level":"debug",
-      "file":"logs/app.log"
+  "dev": {
+    "enable": true,
+    "log": {
+      "level": "debug",
+      "file": "logs/app.log"
     },
-    "cache_time":5,
-    "database":{
-      "username":"mapuser",
-      "password":"password",
-      "database":"lisa_data2",
-      "host":"127.0.0.1:3306"
+    "cache_time": 5,
+    "database": {
+      "username": "mapuser",
+      "password": "password",
+      "database": "lisa_data2",
+      "host": "127.0.0.1:3306"
     },
-    "server":{
-      "port":"8080",
-      "host":"127.0.0.1"
+    "server": {
+      "port": "8080",
+      "host": "127.0.0.1"
     },
-    "slack":{
-      "slackApi":{
-        "masterkey":"",
-        "apikey":""
+    "slack": {
+      "slackApi": {
+        "masterkey": "",
+        "apikey": ""
       },
-      "admin":[
+      "admin": [
         "",
         ""
       ],
-      "moderator":[
+      "moderator": [
         "",
         ""
       ],
-      "admin_channels":[
+      "admin_channels": [
         "",
         ""
       ],
-      "moderator_channels":[
+      "moderator_channels": [
         "",
         ""
       ],
-      "monitor_channels":[
+      "monitor_channels": [
         "",
         ""
       ],
-      "subscriber_channels":[
+      "subscriber_channels": [
         "",
         ""
       ]
     },
-    "pokemonfilters":{
-      "commandwords":[
+    "pokemonfilters": {
+      "commandwords": [
         {
-          "add notify":true
+          "add notify": true
         },
         {
-          "list notify":true
+          "list notify": true
         },
         {
-          "remove notify":true
+          "remove notify": true
         },
         {
-          "edit notify":true
+          "edit notify": true
         }
       ],
-      "filterwords":[
+      "filterwords": [
         {
-          "EncounterID":false
+          "EncounterID": false
         },
         {
-          "SpawnpointID":false
+          "SpawnpointID": false
         },
         {
-          "PokemonID":true
+          "PokemonID": true
         },
         {
-          "PokemonLevel":true
+          "PokemonLevel": true
         },
         {
-          "PlayerLevel":false
+          "PlayerLevel": false
         },
         {
-          "Latitude":true
+          "Latitude": true
         },
         {
-          "Longitude":true
+          "Longitude": true
         },
         {
-          "DisappearTime":true
+          "DisappearTime": true
         },
         {
-          "LastModifiedTime":false
+          "LastModifiedTime": false
         },
         {
-          "TimeUntilHiddenMs":false
+          "TimeUntilHiddenMs": false
         },
         {
-          "SecondsUntilDespawn":false
+          "SecondsUntilDespawn": false
         },
         {
-          "SpawnStart":false
+          "SpawnStart": false
         },
         {
-          "SpawnEnd":false
+          "SpawnEnd": false
         },
         {
-          "Verified":false
+          "Verified": false
         },
         {
-          "CpMultiplier":false
+          "CpMultiplier": false
         },
         {
-          "Form":true
+          "Form": true
         },
         {
-          "Cp":true
+          "Cp": true
         },
         {
-          "IndividualAttack":true
+          "IndividualAttack": true
         },
         {
-          "IndividualDefense":true
+          "IndividualDefense": true
         },
         {
-          "IndividualStamina ":true
+          "IndividualStamina ": true
         },
         {
-          "Move1":true
+          "Move1": true
         },
         {
-          "Move2":true
+          "Move2": true
         },
         {
-          "Height":true
+          "Height": true
         },
         {
-          "Weight":true
+          "Weight": true
         },
         {
-          "Gender":true
+          "Gender": true
         }
       ]
     }
   },
-  "test":{
-
-  },
-  "prod":{
-
-  }
+  "test": {},
+  "prod": {}
 }

@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/jinzhu/gorm"
 	"time"
+	"github.com/weilunwu/go-geofence"
 )
 
 type PogoAccount struct {
@@ -210,10 +211,10 @@ type AddNotifyRaid struct {
 	MonMovesFilters []MonMovesFilter `json:"MonMoves"`
 }
 type EggOrRaid struct {
-	GymName   *string    `json:"gym_name"` //string
-	Team      *NameAndID `json:"team"`     //string
-	Level     *Range     `json:"level"`
-	Sponsor   *bool      `json:"sponsor"`
+	GymName *string    `json:"gym_name"` //string
+	Team    *NameAndID `json:"team"`     //string
+	Level   *Range     `json:"level"`
+	Sponsor *bool      `json:"sponsor"`
 }
 type AddNotifyEgg struct {
 	EggOrRaid
@@ -222,12 +223,27 @@ type AddNotifyGym struct {
 	Sponsor *bool   `json:"sponsor"`
 	GymName *string `json:"gym_name"` //string
 }
+type UserRegion struct {
+	UserId string `json:"UserId"`
+	Region string `json:"Region"`
+}
+type Region struct {
+	Region string        `json:"Region"`
+	Zone   []GeoLocation `json:"zone"`
+}
+type Regions struct {
+	Regions []Region `json:"Regions"`
+}
 type Filters struct {
-	UserId        string         `json:"UserId"`
+	UserRegion    *UserRegion    `json:"UserRegion"`
 	AddNotifyAll  *AddNotifyAll  `json:"AddNotifyAll"`  //AddNotifyAll
 	AddNotifies   []AddNotify    `json:"AddNotifies"`   //slice of AddNotify
 	AddLocation   *AddLocation   `json:"AddLocation"`   //AddLocation
 	AddNotifyRaid *AddNotifyRaid `json:"AddNotifyRaid"` //AddNotifyRaid
 	AddNotifyEgg  *AddNotifyEgg  `json:"AddNotifyEgg"`  //AddNotifyEgg
 	AddNotifyGym  *AddNotifyGym  `json:"AddNotifyGym"`  //AddNotifyGym
+}
+type GeoFences struct {
+	Region string
+	Geofence *geofence.Geofence
 }

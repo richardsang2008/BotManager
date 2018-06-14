@@ -132,16 +132,29 @@ func (u *PokeUtility) BackFillIdForFilters(filters *model.Filters, pokemonMap ma
 	}
 	return filters
 }
-func (u *PokeUtility) ParsePokeMinerInput(data []byte, isTest bool) (interface{}, *bool, error) {
+func (u *PokeUtility) whichRegion (regions []model.GeoFences, lat float64, lng float64) *string {
+	ret :=""
+	for _,element :=range regions{
+		//calculate the zone
+		if element.Geofence.Inside(geo.NewPoint(lat,lng)) {
+			ret = element.Region
+			return &ret
+		}
+	}
+	return nil
+}
+func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences, isTest bool) (interface{}, *bool, *string, error) {
 	//data is the json in byte array
 	var ret interface{}
+	//var region *string
 	isWithinTime := false
 	gen := make(map[string]interface{})
 	now := time.Now()
 	if err := json.Unmarshal(data, &gen); err != nil {
 		MLog.Error(err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+	var regionstr *string
 	if val, ok := gen["type"]; ok {
 		pokemessage := &model.PokeMinerMonMessage{}
 		raidmessage := &model.PokeMinerRaidMessage{}
@@ -156,6 +169,9 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, isTest bool) (interface{}
 			if expireTime.Sub(now) > 0 {
 				isWithinTime = true
 			}
+			//find out which region
+			regionstr = u.whichRegion(regions, pokemessage.Message.Latitude,pokemessage.Message.Longitude)
+
 		case "raid":
 			if err := json.Unmarshal([]byte(data), &raidmessage); err != nil {
 				MLog.Error(err)
@@ -165,22 +181,26 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, isTest bool) (interface{}
 			if expireTime.Sub(now) > 0 {
 				isWithinTime = true
 			}
+			//find out which region
+			regionstr = u.whichRegion(regions, raidmessage.Message.Latitude,raidmessage.Message.Longitude)
 		case "gym":
 			if err := json.Unmarshal([]byte(data), &gymmessage); err != nil {
 				MLog.Error(err)
 			}
 			ret = gymmessage
+			//find out which region
+			regionstr = u.whichRegion(regions, gymmessage.Message.Latitude,gymmessage.Message.Longitude)
 
 		default:
 			MLog.Error("input is not supported input type is ", val)
-			return nil, nil, errors.New("input is not supported")
+			return nil, nil,nil, errors.New("input is not supported")
 		}
 	}
 	if isTest {
 		isWithinTime = true
-		return ret, &isWithinTime, nil
+		return ret, &isWithinTime, regionstr,nil
 	}
-	return ret, &isWithinTime, nil
+	return ret, &isWithinTime, regionstr,nil
 }
 
 // Calculates the Haversine distance between two points in kilometers.
@@ -236,6 +256,7 @@ func (u *PokeUtility) ApplyFiltersToGymMessage(gym *model.PokeMinerGymMessage, f
 func (u *PokeUtility) ApplyFiltersToRaidOrEggMessage(raidoregg *model.PokeMinerRaidMessage, filters *model.Filters) bool {
 	isOkToAlter := false
 	locationbool := false
+
 	if filters.AddLocation != nil {
 		radius := u.GreatCircleDistance(&(raidoregg.Message.GeoLocation), &(filters.AddLocation.GeoLocation)) * KMTOMILES
 		d := *(filters.AddLocation.Radius)
@@ -354,6 +375,8 @@ func (u *PokeUtility) ApplyFiltersToPokemonMessage(mon *model.PokeMinerMonMessag
 		mon.Message.Iv = &iv
 		//fmt.Sprintf("%.2f",iv)
 	}
+	//make sure the location is within the region
+
 	//checking to apply filter
 	if filters.AddLocation != nil {
 		//check to see if the mon is within the location radius
@@ -484,6 +507,7 @@ func (u *PokeUtility) ApplyFiltersToPokemonMessage(mon *model.PokeMinerMonMessag
 	}
 	return isOkToAlter
 }
+
 func (u *PokeUtility) ApplyFiltersToMessage(message interface{}, filters *model.Filters) bool {
 	//check what kind of message this is
 	isOkToAlter := false
