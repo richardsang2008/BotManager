@@ -70,6 +70,7 @@ type BaseStats struct {
 }
 
 type GeoLocation struct {
+	Region *string `json:region`
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 }

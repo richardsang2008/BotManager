@@ -164,33 +164,34 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 			if err := json.Unmarshal([]byte(data), &pokemessage); err != nil {
 				MLog.Error(err)
 			}
-			ret = pokemessage
 			expireTime := time.Unix(*(pokemessage.Message.DisappearTime), 0)
 			if expireTime.Sub(now) > 0 {
 				isWithinTime = true
 			}
 			//find out which region
 			regionstr = u.whichRegion(regions, pokemessage.Message.Latitude,pokemessage.Message.Longitude)
-
+			pokemessage.Message.Region = regionstr
+			ret = pokemessage
 		case "raid":
 			if err := json.Unmarshal([]byte(data), &raidmessage); err != nil {
 				MLog.Error(err)
 			}
-			ret = raidmessage
 			expireTime := time.Unix(*(raidmessage.Message.RaidEnd), 0)
 			if expireTime.Sub(now) > 0 {
 				isWithinTime = true
 			}
 			//find out which region
 			regionstr = u.whichRegion(regions, raidmessage.Message.Latitude,raidmessage.Message.Longitude)
+			raidmessage.Message.Region = regionstr
+			ret = raidmessage
 		case "gym":
 			if err := json.Unmarshal([]byte(data), &gymmessage); err != nil {
 				MLog.Error(err)
 			}
-			ret = gymmessage
 			//find out which region
 			regionstr = u.whichRegion(regions, gymmessage.Message.Latitude,gymmessage.Message.Longitude)
-
+			gymmessage.Message.Region = regionstr
+			ret = gymmessage
 		default:
 			MLog.Error("input is not supported input type is ", val)
 			return nil, nil,nil, errors.New("input is not supported")

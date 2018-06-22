@@ -31,8 +31,8 @@ func GetUsers(c *gin.Context) {
 
 const ConfigPath = "config"
 const PokemonEn = "pokemon_en"
-const CpMultipliers = "cp_multipliers"
-const BaseStats = "base_stats"
+//const CpMultipliers = "cp_multipliers"
+//const BaseStats = "base_stats"
 
 func setupRouter(router *gin.Engine) {
 	router.POST("/account/add", services.AddAccount)
@@ -126,9 +126,7 @@ func main() {
 		regions := &model.Regions{}
 		json.Unmarshal([]byte(filterrstr), regions)
 		//create a geofence
-
 		var genfence_zones []model.GeoFences
-
 		if regions.Regions != nil {
 			var geo_Fence = model.GeoFences{}
 			for _, element := range regions.Regions {
@@ -137,7 +135,6 @@ func main() {
 				for _, zone := range element.Zone {
 					d := geo.NewPoint(zone.Latitude, zone.Longitude)
 					polygon = append(polygon, d)
-
 				}
 				x_geofence := geofence.NewGeofence([][]*geo.Point{polygon, []*geo.Point{}})
 				geo_Fence.Geofence = x_geofence
@@ -159,55 +156,50 @@ func main() {
 		pokemonMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "pokemon")
 		//load the move data
 		moveMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "moves")
-		//load the rarity data
-		rarityMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "rarity")
-		//load the sizes data
-		sizesMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "sizes")
 		//load the teams data
 		teamsMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "teams")
+		//load the rarity data
+		//rarityMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "rarity")
+		//load the sizes data
+		//sizesMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "sizes")
+		//utility.MLog.Debug(teamsMap[2])
+		//utility.MLog.Debug(pokemonMap[29])
+		//utility.MLog.Debug(moveMap[135])
+		//utility.MLog.Debug(rarityMap[2])
+		//utility.MLog.Debug(sizesMap[3])
 		//load the types data
-		typesMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "types")
+		//typesMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "types")
+		//utility.MLog.Debug(typesMap[15])
 		//load the weather data
-		weatherMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "weather")
+		//weatherMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "weather")
+		//utility.MLog.Debug(weatherMap[6])
 		//load the forms 201 data
-		forms201Map, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "forms.201")
+		//forms201Map, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "forms.201")
+		//utility.MLog.Debug(forms201Map[10])
 		//load the forms 351 data
-		forms351Map, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "forms.351")
+		//forms351Map, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "forms.351")
+		//utility.MLog.Debug(forms351Map[31])
 		//load the forms 386 data
-		forms386Map, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "forms.386")
+		//forms386Map, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "forms.386")
+		//utility.MLog.Debug(forms386Map[35])
 		//load the day_or_night data
-		dayOrNightMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "day_or_night")
+		//dayOrNightMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "day_or_night")
+		//utility.MLog.Debug(dayOrNightMap[1])
 		//load the leaders data
-		leadersMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "leaders")
+		//leadersMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "leaders")
+		//utility.MLog.Debug(leadersMap[3])
 		//load the severity data
-		severityMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "severity")
+		//severityMap, _ := utility.MUtility.LoadDataToIntMapString(ConfigPath, PokemonEn, "severity")
+		//utility.MLog.Debug(severityMap[3])
 		//load the misc data
-		miscMap, _ := utility.MUtility.LoadDataToStringMapString(ConfigPath, PokemonEn, "misc")
+		//miscMap, _ := utility.MUtility.LoadDataToStringMapString(ConfigPath, PokemonEn, "misc")
+		//utility.MLog.Debug(miscMap["boosted"])
 		//load the cp_multipliers
 		//cpMultipliersMap, _ := utility.MUtility.LoadDataToFloat64MapString(ConfigPath, CpMultipliers, "cp_multipliers")
+		//utility.MLog.Debug(cpMultipliersMap[7.5])
 		//load the base stats data
 		//baseStatsMap, _ := utility.MUtility.LoadDataToIntMapInterface(ConfigPath, BaseStats, "base_stats")
-
-		utility.MLog.Debug(pokemonMap[29])
-		utility.MLog.Debug(moveMap[135])
-		utility.MLog.Debug(rarityMap[2])
-		utility.MLog.Debug(sizesMap[3])
-		utility.MLog.Debug(teamsMap[2])
-		utility.MLog.Debug(typesMap[15])
-		utility.MLog.Debug(weatherMap[6])
-		utility.MLog.Debug(forms201Map[10])
-		utility.MLog.Debug(forms351Map[31])
-		utility.MLog.Debug(forms386Map[35])
-		utility.MLog.Debug(dayOrNightMap[1])
-		utility.MLog.Debug(leadersMap[3])
-		utility.MLog.Debug(severityMap[3])
-		utility.MLog.Debug(miscMap["boosted"])
-		//utility.MLog.Debug(cpMultipliersMap[7.5])
 		//utility.MLog.Debug(baseStatsMap[5])
-		//get local time
-		//loc, _ := time.LoadLocation("America/Los_Angeles")
-		//t := time.Now().In(loc)
-		//utility.MLog.Info(t)
 
 		//load the testing data from testdata.txt
 		f, err1 := os.Open("test/testdata.txt")
@@ -215,58 +207,30 @@ func main() {
 			utility.MLog.Error(err1)
 		}
 		defer f.Close()
+		var usersfilterstr []string
 		f2, err2 := os.Open("test/filters.json")
 		if err2 != nil {
 			utility.MLog.Error(err2)
 		}
-		scanner2 := bufio.NewScanner(f2)
+		usersFiltersScanner := bufio.NewScanner(f2)
 		defer f2.Close()
-		filterstr := ""
-		for scanner2.Scan() {
-			line := scanner2.Text()
+		for usersFiltersScanner.Scan() {
+			line := usersFiltersScanner.Text()
 			if !strings.HasPrefix(line, "#") || len(line) == 0 {
-				filterstr = line
+				usersfilterstr = append(usersfilterstr, line)
 			}
 		}
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			aline := scanner.Text()
-			if !strings.HasPrefix(aline, "#") || len(aline) == 0 {
-				general, isNotifyToUser, _ := controller.FilterPokeMinerInput([]byte(aline), []byte(filterstr), genfence_zones, pokemonMap, moveMap, teamsMap)
-				if isNotifyToUser {
-					utility.MLog.Debug("Send to user message")
-
-					if err != nil {
-						utility.MLog.Error(err)
-					} else {
-						switch t := general.(type) {
-						case *model.PokeMinerMonMessage:
-							mon := general.(*model.PokeMinerMonMessage)
-							utility.MLog.Debug("I am pokemessage  %f , %.2f", *(mon.Message.PokemonID), *(mon.Message.Iv))
-						case *model.PokeMinerRaidMessage:
-							mon := general.(*model.PokeMinerRaidMessage)
-							if mon.Message.Cp == nil || *(mon.Message.Cp) == 0 {
-								utility.MLog.Debug("I am eggmessage", mon.Message.Latitude)
-							} else {
-								utility.MLog.Debug("I am raidmessage", mon.Message.Latitude)
-							}
-
-						case *model.PokeMinerGymMessage:
-							mon := general.(*model.PokeMinerGymMessage)
-							utility.MLog.Debug("I am gymmessage", mon.Message.Latitude)
-							if mon.Message.Guards == nil {
-								utility.MLog.Debug("there is no guard data")
-							} else {
-								utility.MLog.Debug("guard 0 id ", mon.Message.Guards[0].PokemonID)
-							}
-						default:
-							_ = t
-							utility.MLog.Debug("nothing")
-						}
-					}
+		messageScanner := bufio.NewScanner(f)
+		for messageScanner.Scan() {
+			messageAline := messageScanner.Text()
+			if !strings.HasPrefix(messageAline, "#") || len(messageAline) == 0 {
+				//add the string into array
+				if len(usersfilterstr) > 0 {
+					controller.FilterPokeMinerInputForAllUsers([]byte(messageAline), usersfilterstr, genfence_zones, pokemonMap, moveMap, teamsMap)
 				}
 			}
 		}
+
 		/*envDataBaseName := fmt.Sprintf("%s.database.database", env)
 		envDataBaseUser := fmt.Sprintf("%s.database.username", env)
 		envDataBasePass := fmt.Sprintf("%s.database.password", env)
