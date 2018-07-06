@@ -47,6 +47,18 @@ type AddLocationCmd struct {
 	Longitude float64
 	Radius float64
 }
+type AddAllMonsCmd struct {
+	Lvl *Range
+	IV *Range
+}
+type AddMonCmd struct {
+	Name string
+	CP *Range
+	Lvl *Range
+	IV *Range
+	Move1 *string
+	Move2 *string
+}
 type SlackUserFilter struct {
 	gorm.Model
 	UserId int
