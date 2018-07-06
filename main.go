@@ -8,20 +8,18 @@ import (
 	"github.com/richardsang2008/BotManager/utility"
 	"github.com/spf13/viper"
 	"github.com/weilunwu/go-geofence"
-	"time"
+
 
 	"bufio"
-	"context"
 	"encoding/json"
 	"github.com/kellydunn/golang-geo"
 	"github.com/richardsang2008/BotManager/controller"
 	"github.com/richardsang2008/BotManager/model"
 	"github.com/richardsang2008/BotManager/services"
 	"io"
-	"net/http"
 	"os"
-	"os/signal"
 	"strings"
+	"sync"
 )
 
 func GetUsers(c *gin.Context) {
@@ -31,6 +29,7 @@ func GetUsers(c *gin.Context) {
 
 const ConfigPath = "config"
 const PokemonEn = "pokemon_en"
+
 //const CpMultipliers = "cp_multipliers"
 //const BaseStats = "base_stats"
 
@@ -50,6 +49,7 @@ func setupRouter(router *gin.Engine) {
 }
 
 func main() {
+	wg := &sync.WaitGroup{}
 	env := ""
 	viper.SetConfigName("appconfig")
 	viper.AddConfigPath(ConfigPath)
@@ -84,8 +84,8 @@ func main() {
 		}
 		envLogLevel := fmt.Sprintf("%s.log.level", env)
 		envLogFile := fmt.Sprintf("%s.log.file", env)
-		envServerPort := fmt.Sprintf("%s.server.port", env)
-		envServerHost := fmt.Sprintf("%s.server.host", env)
+
+
 		logLevel := viper.GetString(envLogLevel)
 
 		var level model.LogLevel
@@ -107,8 +107,7 @@ func main() {
 
 		//init the cache
 		utility.MCache.New(5, 10)
-		serverPort := viper.GetString(envServerPort)
-		serverHost := viper.GetString(envServerHost)
+
 		//load the regions inform
 		fr, errr := os.Open("config/regions.json")
 		if errr != nil {
@@ -231,7 +230,7 @@ func main() {
 			}
 		}
 
-		/*envDataBaseName := fmt.Sprintf("%s.database.database", env)
+		envDataBaseName := fmt.Sprintf("%s.database.database", env)
 		envDataBaseUser := fmt.Sprintf("%s.database.username", env)
 		envDataBasePass := fmt.Sprintf("%s.database.password", env)
 		envDataBaseAddress := fmt.Sprintf("%s.database.host", env)
@@ -240,7 +239,29 @@ func main() {
 		dataBasePass := viper.GetString(envDataBasePass)
 		dataBaseHost := viper.GetString(envDataBaseAddress)
 		controller.Data.New(dataBaseUser, dataBasePass, dataBaseHost, dataBaseName)
-		defer controller.Data.Close()*/
+		defer controller.Data.Close()
+		//slack hosting
+		envSlackMasterslackToken :=fmt.Sprintf("%s.slack.slackApi.masterslackToken",env)
+		envSlackBotslackToken := fmt.Sprintf("%s.slack.slackApi.botslackToken",env)
+		envSlackLisaslacktoken := fmt.Sprintf("%s.slack.slackApi.lisaslacktoken",env)
+		envMessageQueueConsumerlookupaddress := fmt.Sprintf("%s.messagequeue.consumerlookupaddress",env)
+		messageQueueConsumerlookupaddress:=viper.GetString(envMessageQueueConsumerlookupaddress)
+		envMessageQueueProduceraddress := fmt.Sprintf("%s.messagequeue.produceraddress",env)
+		messageQueueProduceraddress:=viper.GetString(envMessageQueueProduceraddress)
+		slackMasterslackToken :=viper.GetString(envSlackMasterslackToken)
+		slackBotslackToken := viper.GetString(envSlackBotslackToken)
+		slackLisaslacktoken := viper.GetString(envSlackLisaslacktoken)
+		slackcontroller :=controller.SlackController{}
+		msgChannel:="slack_messages_channel"
+		msgTopic :="slack_poke_messages"
+		slackcontroller.SlackSelfHost(slackLisaslacktoken,slackMasterslackToken,slackBotslackToken,messageQueueProduceraddress,messageQueueConsumerlookupaddress,msgTopic,msgChannel,wg)
+
+		//webhosting
+		/*
+		serverPort := viper.GetString(envServerPort)
+		serverHost := viper.GetString(envServerHost)
+		envServerPort := fmt.Sprintf("%s.server.port", env)
+		envServerHost := fmt.Sprintf("%s.server.host", env)
 		address := fmt.Sprintf("%v:%s", serverHost, serverPort)
 		srv := &http.Server{
 			Addr:    address,
@@ -263,6 +284,6 @@ func main() {
 		if err := srv.Shutdown(ctx); err != nil {
 			utility.MLog.Panic("Server Shutdown:", err)
 		}
-		utility.MLog.Info("Server exiting")
+		utility.MLog.Info("Server exiting")*/
 	}
 }

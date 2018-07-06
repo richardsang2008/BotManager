@@ -1,5 +1,5 @@
 package services
-/*
+
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -119,7 +119,6 @@ func ReleaseAccount(c *gin.Context) {
 			}
 		}
 	}
-
 }
 func AddAccountWithLevelHandler(maxlevel int) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
@@ -263,4 +262,3 @@ func GetAccountBySystemIdAndLevelAndMark(c *gin.Context) {
 	}
 
 }
-*/

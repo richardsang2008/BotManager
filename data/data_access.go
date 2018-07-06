@@ -19,17 +19,28 @@ type DataAccessLay struct {
 func (s *DataAccessLay) New(user, pass, host, dbname string) {
 	utility.MLog.Info("Open database")
 	con := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8&parseTime=True&loc=Local", user, pass, host, dbname)
+	//con :=fmt.Sprintf("%v:%v@/%v?charset=utf8&parseTime=True&loc=Local", user, pass,  dbname)
 	DataBase, err = gorm.Open("mysql", con)
 	if err != nil {
 		utility.MLog.Panic("Error creating connection pool: " + err.Error())
 	}
+	//create tables
+	DataBase.AutoMigrate(&model.PogoAccount{}, &model.SlackMessage{}, &model.SlackUserFilter{})
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		if defaultTableName == "pogo_accounts" {
 			defaultTableName = "account"
 		}
 		return defaultTableName
 	}
-	DataBase.CreateTable(&model.PogoAccount{}, &model.PokemonData{})
+	if !DataBase.HasTable(&model.PogoAccount{}) {
+		DataBase.CreateTable(&model.PogoAccount{})
+	}
+	if !DataBase.HasTable(&model.SlackMessage{}) {
+		DataBase.CreateTable(&model.SlackMessage{})
+	}
+	if !DataBase.HasTable(&model.SlackUserFilter{}) {
+		DataBase.CreateTable(&model.SlackUserFilter{})
+	}
 }
 func (s *DataAccessLay) Close() {
 	utility.MLog.Info("Closing database")
@@ -85,4 +96,50 @@ func (s *DataAccessLay) UpdateAccount(account model.PogoAccount) (*string, error
 }
 func (s *DataAccessLay) UpdateAccountSetSystemIdToNull(account model.PogoAccount) {
 	DataBase.Model(&account).Update("system_id", gorm.Expr("NULL"))
+}
+func (s *DataAccessLay) InsertSlackMessage(regionId int, channelId string, ts float64) error {
+	utility.MLog.Debug("DataAccessLay InsertSlackMessage starting")
+	if ts != 0 {
+		slackMessage := model.SlackMessage{ChannelId: channelId, RegionId: regionId, Ts: ts}
+		DataBase.Create(&slackMessage)
+		utility.MLog.Debug("DataAccessLay InsertSlackMessage inserted ts is ", ts)
+		utility.MLog.Debug("DataAccessLay InsertSlackMessage end")
+		return nil
+	}
+	return nil
+}
+func (s *DataAccessLay) GetSlackUserFilter(userId int) (*model.SlackUserFilter, error) {
+	var userfilters []model.SlackUserFilter
+	utility.MLog.Debug("DataAccessLay GetSlackUserFilter starting")
+	if err := DataBase.Where("user_id=?", userId).Find(&userfilters).Error; err != nil {
+		utility.MLog.Error("DataAccessLay GetSlackUserFilter failed " + err.Error())
+		return nil, err
+	} else {
+		if len(userfilters) > 0 {
+			utility.MLog.Debug("DataAccessLay GetSlackUserFilter end")
+			return &userfilters[0], nil
+		} else {
+			return nil, nil
+		}
+	}
+}
+func (s *DataAccessLay) InsertSlackUserFilter(userId int, filters string) error {
+	utility.MLog.Debug("DataAccessLay InsertSlackUserFilter starting")
+	var userfilters []model.SlackUserFilter
+	if err := DataBase.Where("user_id=?", userId).Find(&userfilters).Error; err != nil {
+		utility.MLog.Error("DataAccessLay GetSlackUserFiltreByUserId failed " + err.Error())
+		return err
+	} else {
+		//find the userfilter by userid but no data found
+		if len(userfilters) == 0 {
+			record := model.SlackUserFilter{UserId: userId, Filters: filters}
+			DataBase.Create(&record)
+			utility.MLog.Debug("DataAccessLay InsertSlackUserFilter end")
+		} else {
+			userfilters[0].Filters = filters
+			DataBase.Model(&userfilters[0]).Update("filters", filters)
+			utility.MLog.Debug("DataAccessLay InsertSlackUserFilter update end")
+		}
+		return nil
+	}
 }

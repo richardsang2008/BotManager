@@ -50,7 +50,6 @@ func (u *PokeUtility) CalculateTwoPointsDistanceInUnits(p1lan, p1lng, p2lan, p2l
 		ret = dist
 	}
 	// change the km to miles
-
 	return ret
 }
 func (u *PokeUtility) BackFillIdForFilters(filters *model.Filters, pokemonMap map[int]string, moveMap map[int]string, teamsMap map[int]string) *model.Filters {
@@ -132,11 +131,11 @@ func (u *PokeUtility) BackFillIdForFilters(filters *model.Filters, pokemonMap ma
 	}
 	return filters
 }
-func (u *PokeUtility) whichRegion (regions []model.GeoFences, lat float64, lng float64) *string {
-	ret :=""
-	for _,element :=range regions{
+func (u *PokeUtility) whichRegion(regions []model.GeoFences, lat float64, lng float64) *string {
+	ret := ""
+	for _, element := range regions {
 		//calculate the zone
-		if element.Geofence.Inside(geo.NewPoint(lat,lng)) {
+		if element.Geofence.Inside(geo.NewPoint(lat, lng)) {
 			ret = element.Region
 			return &ret
 		}
@@ -169,7 +168,7 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 				isWithinTime = true
 			}
 			//find out which region
-			regionstr = u.whichRegion(regions, pokemessage.Message.Latitude,pokemessage.Message.Longitude)
+			regionstr = u.whichRegion(regions, pokemessage.Message.Latitude, pokemessage.Message.Longitude)
 			pokemessage.Message.Region = regionstr
 			ret = pokemessage
 		case "raid":
@@ -181,7 +180,7 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 				isWithinTime = true
 			}
 			//find out which region
-			regionstr = u.whichRegion(regions, raidmessage.Message.Latitude,raidmessage.Message.Longitude)
+			regionstr = u.whichRegion(regions, raidmessage.Message.Latitude, raidmessage.Message.Longitude)
 			raidmessage.Message.Region = regionstr
 			ret = raidmessage
 		case "gym":
@@ -189,19 +188,19 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 				MLog.Error(err)
 			}
 			//find out which region
-			regionstr = u.whichRegion(regions, gymmessage.Message.Latitude,gymmessage.Message.Longitude)
+			regionstr = u.whichRegion(regions, gymmessage.Message.Latitude, gymmessage.Message.Longitude)
 			gymmessage.Message.Region = regionstr
 			ret = gymmessage
 		default:
 			MLog.Error("input is not supported input type is ", val)
-			return nil, nil,nil, errors.New("input is not supported")
+			return nil, nil, nil, errors.New("input is not supported")
 		}
 	}
 	if isTest {
 		isWithinTime = true
-		return ret, &isWithinTime, regionstr,nil
+		return ret, &isWithinTime, regionstr, nil
 	}
-	return ret, &isWithinTime, regionstr,nil
+	return ret, &isWithinTime, regionstr, nil
 }
 
 // Calculates the Haversine distance between two points in kilometers.
@@ -257,7 +256,6 @@ func (u *PokeUtility) ApplyFiltersToGymMessage(gym *model.PokeMinerGymMessage, f
 func (u *PokeUtility) ApplyFiltersToRaidOrEggMessage(raidoregg *model.PokeMinerRaidMessage, filters *model.Filters) bool {
 	isOkToAlter := false
 	locationbool := false
-
 	if filters.AddLocation != nil {
 		radius := u.GreatCircleDistance(&(raidoregg.Message.GeoLocation), &(filters.AddLocation.GeoLocation)) * KMTOMILES
 		d := *(filters.AddLocation.Radius)
@@ -349,7 +347,6 @@ func (u *PokeUtility) ApplyFiltersToRaidOrEggMessage(raidoregg *model.PokeMinerR
 								}
 							}
 						}
-
 					}
 					if filters.AddNotifyRaid.Sponsor != nil {
 						enabledSum += 1
@@ -377,7 +374,6 @@ func (u *PokeUtility) ApplyFiltersToPokemonMessage(mon *model.PokeMinerMonMessag
 		//fmt.Sprintf("%.2f",iv)
 	}
 	//make sure the location is within the region
-
 	//checking to apply filter
 	if filters.AddLocation != nil {
 		//check to see if the mon is within the location radius
@@ -528,4 +524,11 @@ func (u *PokeUtility) ApplyFiltersToMessage(message interface{}, filters *model.
 		fmt.Print("nothing")
 	}
 	return isOkToAlter
+}
+
+func (u *PokeUtility) ParseSlackInputCommand(message string) {
+	parts:=strings.Fields(message)
+	for _, v := range parts {
+		MLog.Debug(v)
+	}
 }

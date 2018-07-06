@@ -14,6 +14,8 @@ var (
 	MCache       Cache
 	MUtility     Utility
 	MPokeUtility PokeUtility
+	MSlackUtility SlackUtility
+
 )
 
 type Utility struct {

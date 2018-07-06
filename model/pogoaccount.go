@@ -2,8 +2,8 @@ package model
 
 import (
 	"github.com/jinzhu/gorm"
-	"time"
 	"github.com/weilunwu/go-geofence"
+	"time"
 )
 
 type PogoAccount struct {
@@ -70,7 +70,7 @@ type BaseStats struct {
 }
 
 type GeoLocation struct {
-	Region *string `json:region`
+	Region    *string `json:region`
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 }
@@ -245,6 +245,6 @@ type Filters struct {
 	AddNotifyGym  *AddNotifyGym  `json:"AddNotifyGym"`  //AddNotifyGym
 }
 type GeoFences struct {
-	Region string
+	Region   string
 	Geofence *geofence.Geofence
 }

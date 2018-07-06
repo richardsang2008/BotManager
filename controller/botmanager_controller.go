@@ -1,5 +1,5 @@
 package controller
-/*
+
 import (
 	"github.com/richardsang2008/BotManager/data"
 	"github.com/richardsang2008/BotManager/model"
@@ -63,7 +63,6 @@ func GetNextUseableAccountByLevel(minlevel, maxlevel int) (*[]model.PogoAccount,
 		} else {
 			return nil, nil
 		}
-
 	}
 }
 func UpdateAccountBySpecialFields(account model.PogoAccount) (*string, error) {
@@ -80,4 +79,4 @@ func UpdateAccountBySpecialFields(account model.PogoAccount) (*string, error) {
 func UpdateAccountSetSystemIdToNull(account model.PogoAccount) {
 	Data.UpdateAccountSetSystemIdToNull(account)
 }
-*/
+
