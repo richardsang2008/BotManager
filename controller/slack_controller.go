@@ -153,6 +153,84 @@ func getParamIndex(parts []string, word string) int {
 	}
 	return -1
 }
+func setUserInputSingleStringValue(parts []string, paramword string) *string{
+	isOkCount := 0
+	totalkeyparams := 0
+	index := getParamIndex(parts, paramword)
+	if index > 0 {
+		totalkeyparams += 1
+		//get the value which is the next on the slice
+		value :=parts[index+1]
+		isOkCount += 1
+		return &value
+	}
+	return nil
+}
+func setUserInputSingleBoolValue(parts []string, paramword string)  bool {
+	strv:=setUserInputSingleStringValue(parts,paramword)
+	if strv!= nil {
+		isBool,_:=strconv.ParseBool(*strv)
+		return isBool
+	}
+	return false
+}
+func setUserInputSingleFloatValue(parts []string, paramword string) float64{
+	strv:=setUserInputSingleStringValue(parts,paramword)
+	//get the value which is the next on the slice
+	if strv != nil  {
+		fl, err := strconv.ParseFloat(*strv, 64)
+		if err != nil {
+			utility.MLog.Error(err)
+		}
+		return fl
+	}
+	return 0
+}
+func setUserinputAsRange( parts []string, paramword string) (*model.Range,bool) {
+	isOkCount :=0
+	totalkeyparams:=0
+	index:=getParamIndex(parts, paramword)
+	if index >0 {
+		totalkeyparams +=1
+		value:=parts[index+1]
+		var err1 error
+		rangeValue:=model.Range{}
+		if strings.HasSuffix(value,"+"){
+			//get the value before the +
+			charArray :=[]rune(value)
+			len:=len(charArray)
+			subvalue:=string(charArray[0: len-1])
+			rangeValue.Min, err1 = strconv.ParseFloat(subvalue,64)
+			if err1 != nil  {
+				utility.MLog.Error(err1)
+			} else {
+				isOkCount +=1
+			}
+			rangeValue.Max = 100
+		} else if strings.HasSuffix(value,"-") {
+			charArray:=[]rune(value)
+			len:=len(charArray)
+			subvalue:=string(charArray[0: len-1])
+			rangeValue.Max, err1 = strconv.ParseFloat(subvalue,64)
+			if err1 != nil  {
+				utility.MLog.Error(err1)
+			} else {
+				isOkCount +=1
+			}
+			rangeValue.Min = 0
+		} else {
+			rangeValue.Min,err1= strconv.ParseFloat(value,64)
+			if err1 != nil  {
+				utility.MLog.Error(err1)
+			} else {
+				isOkCount +=1
+			}
+			rangeValue.Max = rangeValue.Min
+		}
+		return &rangeValue, isOkCount == totalkeyparams
+	}
+	return nil,false
+}
 func ParseSlackUserInput(userInput string) {
 	//parse the userinput by delimiter white space
 	if strings.HasPrefix(userInput, "!") {
@@ -166,45 +244,10 @@ func ParseSlackUserInput(userInput string) {
 				//make sure the user is in subscription status, balance is greater than 0
 				if isUserInGoodStatus {
 					addlocationcmd := model.AddLocationCmd{}
-					isOkCount := 0
-					totalkeyparams := 0
-					index := getParamIndex(parts, "lan")
-					if index > 0 {
-						totalkeyparams += 1
-						//get the value which is the next on the slice
-						fl, err := strconv.ParseFloat(parts[index+1], 64)
-						if err != nil {
-							utility.MLog.Error(err)
-						} else {
-							addlocationcmd.Latitude = fl
-							isOkCount += 1
-						}
-					}
-					index = getParamIndex(parts, "lng")
-					if index > 0 {
-						totalkeyparams += 1
-						//get the value which is the next on the slice
-						fl, err := strconv.ParseFloat(parts[index+1], 64)
-						if err != nil {
-							utility.MLog.Error(err)
-						} else {
-							addlocationcmd.Longitude = fl
-							isOkCount += 1
-						}
-					}
-					index = getParamIndex(parts, "radius")
-					if index > 0 {
-						totalkeyparams += 1
-						//get the value which is the next on the slice
-						fl, err := strconv.ParseFloat(parts[index+1], 64)
-						if err != nil {
-							utility.MLog.Error(err)
-						} else {
-							addlocationcmd.Radius = fl
-							isOkCount += 1
-						}
-					}
-					if isOkCount == totalkeyparams {
+					addlocationcmd.Latitude = setUserInputSingleFloatValue(parts,"lan")
+					addlocationcmd.Longitude = setUserInputSingleFloatValue(parts,"lng")
+					addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
+					if (addlocationcmd.Longitude !=0 && addlocationcmd.Latitude !=0 && addlocationcmd.Radius !=0) {
 						//addlocation is successful then further handle is required
 						//check db to see if user already has the location alter, if not add it else update it
 						//load the user filter from db
@@ -221,137 +264,87 @@ func ParseSlackUserInput(userInput string) {
 			case "!addallmons":
 				if isUserInGoodStatus {
 					addallmonscmd := model.AddAllMonsCmd{}
-					isOkCount := 0
-					totalkeyparams := 0
-					index := getParamIndex(parts, "lvl")
-					if index > 0 {
-						totalkeyparams += 1
-						value := parts[index+1]
-						var err1 error
-						if strings.HasSuffix(value, "+") {
-							//get the value before the +
-							charArray := []rune(value)
-							len := len(charArray)
-							subvalue := string(charArray[0 : len-1])
-							addallmonscmd.Lvl.Min, err1 = strconv.ParseFloat(subvalue, 64)
-							if err1 != nil {
-								utility.MLog.Error(err1)
-							} else {
-								isOkCount +=1
-							}
-							addallmonscmd.Lvl.Max = 100
-						} else if strings.HasSuffix(value, "-") {
-							//get the value before the -
-							charArray := []rune(value)
-							len := len(charArray)
-							subvalue := string(charArray[0 : len-1])
-							addallmonscmd.Lvl.Max, err1 = strconv.ParseFloat(subvalue, 64)
-							if err1 !=nil {
-								utility.MLog.Error(err1)
-							} else {
-								isOkCount +=1
-							}
-							addallmonscmd.Lvl.Min = 0
-						} else {
-							//get the value before the +
-							addallmonscmd.Lvl.Min, err1 = strconv.ParseFloat(value, 64)
-							if err1 !=nil {
-								utility.MLog.Error(err1)
-							} else {
-								isOkCount +=1
-							}
-							addallmonscmd.Lvl.Max = addallmonscmd.Lvl.Min
-						}
-					}
-					index = getParamIndex(parts, "iv")
-					if index > 0 {
-						totalkeyparams += 1
-						value := parts[index+1]
-						var err1 error
-						if strings.HasSuffix(value, "+") {
-							//get the value before the +
-							charArray := []rune(value)
-							len := len(charArray)
-							subvalue := string(charArray[0 : len-1])
-							addallmonscmd.IV.Min, err1 = strconv.ParseFloat(subvalue, 64)
-							if err1 != nil {
-								utility.MLog.Error(err1)
-							} else {
-								isOkCount +=1
-							}
-							addallmonscmd.IV.Max = 100
-						} else if strings.HasSuffix(value, "-") {
-							//get the value before the -
-							charArray := []rune(value)
-							len := len(charArray)
-							subvalue := string(charArray[0 : len-1])
-							addallmonscmd.IV.Max, err1 = strconv.ParseFloat(subvalue, 64)
-							if err1 !=nil {
-								utility.MLog.Error(err1)
-							} else {
-								isOkCount +=1
-							}
-							addallmonscmd.IV.Min = 0
-						} else {
-							//get the value before the +
-							addallmonscmd.IV.Min, err1 = strconv.ParseFloat(value, 64)
-							if err1 !=nil {
-								utility.MLog.Error(err1)
-							} else {
-								isOkCount +=1
-							}
-							addallmonscmd.IV.Max = addallmonscmd.IV.Min
-						}
-					}
+					lvlranged,_:= setUserinputAsRange(parts,"lvl")
+					addallmonscmd.Lvl = lvlranged
+					ivranged,_:= setUserinputAsRange(parts,"iv")
+					addallmonscmd.IV = ivranged
 				}
 			case "!addmon":
-				addallmonscmd := model.AddAllMonsCmd{}
-				isOkCount := 0
-				totalkeyparams := 0
-				index := getParamIndex(parts, "lvl")
-				if index > 0 {
-					totalkeyparams += 1
-					value := parts[index+1]
-					var err1 error
-					if strings.HasSuffix(value, "+") {
-						//get the value before the +
-						charArray := []rune(value)
-						len := len(charArray)
-						subvalue := string(charArray[0 : len-1])
-						addallmonscmd.Lvl.Min, err1 = strconv.ParseFloat(subvalue, 64)
-						if err1 != nil {
-							utility.MLog.Error(err1)
-						} else {
-							isOkCount +=1
-						}
-						addallmonscmd.Lvl.Max = 100
-					} else if strings.HasSuffix(value, "-") {
-						//get the value before the -
-						charArray := []rune(value)
-						len := len(charArray)
-						subvalue := string(charArray[0 : len-1])
-						addallmonscmd.Lvl.Max, err1 = strconv.ParseFloat(subvalue, 64)
-						if err1 !=nil {
-							utility.MLog.Error(err1)
-						} else {
-							isOkCount +=1
-						}
-						addallmonscmd.Lvl.Min = 0
-					} else {
-						//get the value before the +
-						addallmonscmd.Lvl.Min, err1 = strconv.ParseFloat(value, 64)
-						if err1 !=nil {
-							utility.MLog.Error(err1)
-						} else {
-							isOkCount +=1
-						}
-						addallmonscmd.Lvl.Max = addallmonscmd.Lvl.Min
-					}
+				cmd := model.AddMonCmd{}
+				lvlranged,_:= setUserinputAsRange(parts,"lvl")
+				cmd.Lvl = lvlranged
+				ivranged,_:= setUserinputAsRange(parts,"iv")
+				cmd.IV = ivranged
+				cpranged,_:= setUserinputAsRange(parts,"cp")
+				cmd.CP = cpranged
+				namestr:=setUserInputSingleStringValue(parts,"name")
+				if namestr != nil  {
+					cmd.Name = *namestr
 				}
+
+
 			case "!addallraid":
+				cmd:=model.AddAllRaidCmd{}
+				lvlranged,_:= setUserinputAsRange(parts,"lvl")
+				cmd.Lvl = lvlranged
+				sponsorValue := setUserInputSingleBoolValue(parts,"sponsored")
+				cmd.Sponsored = sponsorValue
+				boostedValue:=setUserInputSingleBoolValue(parts,"boosted")
+				cmd.Boosted = boostedValue
+				teamNamestr:= setUserInputSingleStringValue(parts,"team")
+				if teamNamestr!=nil {
+					cmd.Team = *teamNamestr
+				}
+				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
+				if gymNamestr!=nil {
+					cmd.GymName = *gymNamestr
+				}
 			case "!addraid":
+				cmd:=model.AddRaidCmd{}
+				lvlranged,_:= setUserinputAsRange(parts,"lvl")
+				cmd.Lvl = lvlranged
+				namestr:=setUserInputSingleStringValue(parts,"name")
+				if namestr != nil {
+					cmd.Name = *namestr
+				}
+				sponsorValue := setUserInputSingleBoolValue(parts,"sponsored")
+				cmd.Sponsored = sponsorValue
+				boostedValue:=setUserInputSingleBoolValue(parts,"boosted")
+				cmd.Boosted = boostedValue
+				teamNamestr:= setUserInputSingleStringValue(parts,"team")
+				if teamNamestr!=nil {
+					cmd.Team = *teamNamestr
+				}
+				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
+				if gymNamestr!=nil {
+					cmd.GymName = *gymNamestr
+				}
 			case "!addegg":
+				cmd:=model.AddEggCmd{}
+				lvlranged,_:= setUserinputAsRange(parts,"lvl")
+				cmd.Lvl = lvlranged
+				sponsorValue := setUserInputSingleBoolValue(parts,"sponsored")
+				cmd.Sponsored = sponsorValue
+				boostedValue:=setUserInputSingleBoolValue(parts,"boosted")
+				cmd.Boosted = boostedValue
+				teamNamestr:= setUserInputSingleStringValue(parts,"team")
+				if teamNamestr!=nil {
+					cmd.Team = *teamNamestr
+				}
+				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
+				if gymNamestr!=nil {
+					cmd.GymName = *gymNamestr
+				}
 			case "!addgym":
+				cmd:=model.AddGymCmd{}
+				teamNamestr:= setUserInputSingleStringValue(parts,"team")
+				if teamNamestr!=nil {
+					cmd.Team = *teamNamestr
+				}
+				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
+				if gymNamestr!=nil {
+					cmd.GymName = *gymNamestr
+				}
 			case "!showlocation":
 				if isUserInGoodStatus {
 					slackUserFilter, err := Data.GetSlackUserFilter(1)

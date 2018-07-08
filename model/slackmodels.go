@@ -56,8 +56,30 @@ type AddMonCmd struct {
 	CP *Range
 	Lvl *Range
 	IV *Range
-	Move1 *string
-	Move2 *string
+	//Move1 *string
+	//Move2 *string
+}
+type AddRaidCmd struct {
+	Name string
+	AddAllRaidCmd
+}
+type AddAllRaidCmd struct {
+	Sponsored bool
+	Lvl *Range
+	Boosted bool
+	Team string
+	GymName string
+}
+type AddEggCmd struct {
+	Sponsored bool
+	Boosted bool
+	Lvl *Range
+	Team string
+	GymName string
+}
+type AddGymCmd struct {
+	Team string
+	GymName string
 }
 type SlackUserFilter struct {
 	gorm.Model
