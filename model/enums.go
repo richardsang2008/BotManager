@@ -9,8 +9,10 @@ const (
 	WARNING
 	PANIC
 )
+
 type MeansureUnit int
-const(
-	Meters MeansureUnit = 1+iota
+
+const (
+	Meters MeansureUnit = 1 + iota
 	Miles
 )

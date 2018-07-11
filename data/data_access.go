@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/richardsang2008/BotManager/model"
 	"github.com/richardsang2008/BotManager/utility"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -25,7 +26,7 @@ func (s *DataAccessLay) New(user, pass, host, dbname string) {
 		utility.MLog.Panic("Error creating connection pool: " + err.Error())
 	}
 	//create tables
-	DataBase.AutoMigrate(&model.PogoAccount{}, &model.SlackMessage{}, &model.SlackUserFilter{})
+	DataBase.AutoMigrate(&model.PogoAccount{}, &model.SlackDBMessage{}, &model.SlackDBUserFilter{})
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		if defaultTableName == "pogo_accounts" {
 			defaultTableName = "account"
@@ -35,11 +36,11 @@ func (s *DataAccessLay) New(user, pass, host, dbname string) {
 	if !DataBase.HasTable(&model.PogoAccount{}) {
 		DataBase.CreateTable(&model.PogoAccount{})
 	}
-	if !DataBase.HasTable(&model.SlackMessage{}) {
-		DataBase.CreateTable(&model.SlackMessage{})
+	if !DataBase.HasTable(&model.SlackDBMessage{}) {
+		DataBase.CreateTable(&model.SlackDBMessage{})
 	}
-	if !DataBase.HasTable(&model.SlackUserFilter{}) {
-		DataBase.CreateTable(&model.SlackUserFilter{})
+	if !DataBase.HasTable(&model.SlackDBUserFilter{}) {
+		DataBase.CreateTable(&model.SlackDBUserFilter{})
 	}
 }
 func (s *DataAccessLay) Close() {
@@ -100,7 +101,7 @@ func (s *DataAccessLay) UpdateAccountSetSystemIdToNull(account model.PogoAccount
 func (s *DataAccessLay) InsertSlackMessage(regionId int, channelId string, ts float64) error {
 	utility.MLog.Debug("DataAccessLay InsertSlackMessage starting")
 	if ts != 0 {
-		slackMessage := model.SlackMessage{ChannelId: channelId, RegionId: regionId, Ts: ts}
+		slackMessage := model.SlackDBMessage{ChannelId: channelId, RegionId: regionId, Ts: ts}
 		DataBase.Create(&slackMessage)
 		utility.MLog.Debug("DataAccessLay InsertSlackMessage inserted ts is ", ts)
 		utility.MLog.Debug("DataAccessLay InsertSlackMessage end")
@@ -108,8 +109,8 @@ func (s *DataAccessLay) InsertSlackMessage(regionId int, channelId string, ts fl
 	}
 	return nil
 }
-func (s *DataAccessLay) GetSlackUserFilter(userId int) (*model.SlackUserFilter, error) {
-	var userfilters []model.SlackUserFilter
+func (s *DataAccessLay) GetSlackUserFilter(userId int) (*model.SlackDBUserFilter, error) {
+	var userfilters []model.SlackDBUserFilter
 	utility.MLog.Debug("DataAccessLay GetSlackUserFilter starting")
 	if err := DataBase.Where("user_id=?", userId).Find(&userfilters).Error; err != nil {
 		utility.MLog.Error("DataAccessLay GetSlackUserFilter failed " + err.Error())
@@ -125,14 +126,14 @@ func (s *DataAccessLay) GetSlackUserFilter(userId int) (*model.SlackUserFilter, 
 }
 func (s *DataAccessLay) InsertSlackUserFilter(userId int, filters string) error {
 	utility.MLog.Debug("DataAccessLay InsertSlackUserFilter starting")
-	var userfilters []model.SlackUserFilter
+	var userfilters []model.SlackDBUserFilter
 	if err := DataBase.Where("user_id=?", userId).Find(&userfilters).Error; err != nil {
 		utility.MLog.Error("DataAccessLay GetSlackUserFiltreByUserId failed " + err.Error())
 		return err
 	} else {
 		//find the userfilter by userid but no data found
 		if len(userfilters) == 0 {
-			record := model.SlackUserFilter{UserId: userId, Filters: filters}
+			record := model.SlackDBUserFilter{UserId: userId, Filters: filters}
 			DataBase.Create(&record)
 			utility.MLog.Debug("DataAccessLay InsertSlackUserFilter end")
 		} else {
@@ -141,5 +142,41 @@ func (s *DataAccessLay) InsertSlackUserFilter(userId int, filters string) error 
 			utility.MLog.Debug("DataAccessLay InsertSlackUserFilter update end")
 		}
 		return nil
+	}
+}
+func (s *DataAccessLay) GetSlackDBUserByUserId(userId string) (*model.SlackDBUser, error) {
+	utility.MLog.Debug("DataAccessLay GetSlackDBUserByUserId starting")
+	var dbusers []model.SlackDBUser
+	if err := DataBase.Where("reference_id=?", userId).Find(&dbusers).Error; err != nil {
+		utility.MLog.Error("DataAccessLay GetSlackDBUserByUserId failed "+ err.Error())
+		return nil,err
+	} else {
+		//find the record
+		if len(dbusers) ==0{
+			return nil,nil
+		} else if len(dbusers) >1{
+			utility.MLog.Error("DataAccessLay GetSlackDBUserByUserId failed due to more records for the id")
+			return nil,errors.New("More records are returned for the same id")
+		} else {
+			return &dbusers[0],nil
+		}
+	}
+}
+func (s *DataAccessLay) GetSlackDBUserByEmail(email string)(*model.SlackDBUser, error) {
+	utility.MLog.Debug("DataAccessLay GetSlackDBUserByUserId starting")
+	var dbusers []model.SlackDBUser
+	if err := DataBase.Where("email=?", email).Find(&dbusers).Error; err != nil {
+		utility.MLog.Error("DataAccessLay GetSlackDBUserByUserId failed "+ err.Error())
+		return nil,err
+	} else {
+		//find the record
+		if len(dbusers) ==0{
+			return nil,nil
+		} else if len(dbusers) >1{
+			utility.MLog.Error("DataAccessLay GetSlackDBUserByUserId failed due to more records for the email")
+			return nil,errors.New("More records are returned for the same id")
+		} else {
+			return &dbusers[0],nil
+		}
 	}
 }

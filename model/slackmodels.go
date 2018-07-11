@@ -3,8 +3,8 @@ package model
 import "github.com/jinzhu/gorm"
 
 type BotMessage struct {
-	UserID string
-	Message string
+	UserID    string
+	Message   string
 	ChannelID string
 }
 type Rights int
@@ -16,6 +16,7 @@ const (
 	SUPER
 	OWNER
 )
+
 type SlackUser struct {
 	ID           string
 	ChannelID    int
@@ -36,26 +37,20 @@ type SlackUser struct {
 	IsBot        bool
 	AccessRights Rights
 }
-type SlackMessage struct {
-	gorm.Model
-	RegionId int
-	ChannelId string
-	Ts  float64
-}
 type AddLocationCmd struct {
-	Latitude float64
+	Latitude  float64
 	Longitude float64
-	Radius float64
+	Radius    float64
 }
 type AddAllMonsCmd struct {
 	Lvl *Range
-	IV *Range
+	IV  *Range
 }
 type AddMonCmd struct {
 	Name string
-	CP *Range
-	Lvl *Range
-	IV *Range
+	CP   *Range
+	Lvl  *Range
+	IV   *Range
 	//Move1 *string
 	//Move2 *string
 }
@@ -65,24 +60,49 @@ type AddRaidCmd struct {
 }
 type AddAllRaidCmd struct {
 	Sponsored bool
-	Lvl *Range
-	Boosted bool
-	Team string
-	GymName string
+	Lvl       *Range
+	Boosted   bool
+	Team      string
+	GymName   string
 }
 type AddEggCmd struct {
 	Sponsored bool
-	Boosted bool
-	Lvl *Range
-	Team string
-	GymName string
+	Boosted   bool
+	Lvl       *Range
+	Team      string
+	GymName   string
 }
 type AddGymCmd struct {
-	Team string
+	Team    string
 	GymName string
 }
-type SlackUserFilter struct {
+//the follwoing structs are used for db
+type SlackDBMessage struct {
 	gorm.Model
-	UserId int
+	RegionId  int
+	ChannelId string
+	Ts        float64
+}
+
+type SlackDBUserFilter struct {
+	gorm.Model
+	UserId  int
 	Filters string
+}
+
+type SlackDBUser struct {
+	gorm.Model
+	Referenceid  string
+	ChannelId    int
+	Fname    string
+	Lname     string
+	Notifyname         string
+	StatusId     int
+	Email        string
+	Phone        string
+	Isadmin      bool
+	Isowner      bool
+	Isbot        bool
+	Realname     string
+	LevelId      int
 }

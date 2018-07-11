@@ -23,7 +23,7 @@ func (h *SlackMessageHandler) HandleMessage(message *nsq.Message) error{
 	}
 	k:= string(message.Body)
 	str:=fmt.Sprintf("NSQ message received: %s", k)
-	var slackMessage  model.SlackMessage
+	var slackMessage  model.SlackDBMessage
 	json.Unmarshal([]byte(k), &slackMessage)
 	err:=Data.InsertSlackMessage(1, slackMessage.ChannelId,slackMessage.Ts)
 	if err != nil {

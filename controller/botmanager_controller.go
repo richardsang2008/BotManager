@@ -79,4 +79,3 @@ func UpdateAccountBySpecialFields(account model.PogoAccount) (*string, error) {
 func UpdateAccountSetSystemIdToNull(account model.PogoAccount) {
 	Data.UpdateAccountSetSystemIdToNull(account)
 }
-

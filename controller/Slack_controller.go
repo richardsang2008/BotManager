@@ -10,19 +10,6 @@ import (
 	"sync"
 )
 
-var (
-
-// Create a cache with a default expiration time of 12 hours, and which
-// purges expired items every 24 hours
-//localcache     = cache.New(12*time.Hour, 24*time.Hour)
-//lisawordParser = utility.LisaWordParser{}
-//messages       = make(chan slack.Msg, 2000)
-//message = utility.MNSQUtility.
-//lisaChannel    = "D5SSTG73R"
-//configuration  = model.Configuration{}
-
-)
-
 func doesNeedingHandleMessage(ev *slack.MessageEvent) bool {
 	if ev.SubType != "" {
 		return false
@@ -30,7 +17,6 @@ func doesNeedingHandleMessage(ev *slack.MessageEvent) bool {
 	return true
 	//return ev.BotID == "" && ev.SubType != "message_deleted" && ev.SubMessage == nil && ev.Hidden == false && ev.ThreadTimestamp == "" && ev.Msg.ItemType == "" && !strings.HasPrefix(ev.Msg.Text, "<")
 }
-
 type SlackController struct {
 	Lisaapi       *slack.Client
 	Masterapi     *slack.Client
@@ -60,19 +46,19 @@ Loop:
 			case *slack.ConnectedEvent:
 				//IMMarketedEvent, GroupMarkedEvent, ChannelMarkedEvent, MessageEvent needs to be tracked so they can be deleted later
 			case *slack.IMMarkedEvent:
-				slackMessage := model.SlackMessage{RegionId: 1, ChannelId: ev.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
 			case *slack.GroupMarkedEvent:
-				slackMessage := model.SlackMessage{RegionId: 1, ChannelId: ev.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
 			case *slack.ChannelMarkedEvent:
-				slackMessage := model.SlackMessage{RegionId: 1, ChannelId: ev.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
@@ -82,7 +68,7 @@ Loop:
 					continue
 				}
 
-				slackMessage := model.SlackMessage{RegionId: 1, ChannelId: ev.Msg.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Msg.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Msg.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
@@ -101,19 +87,6 @@ Loop:
 					utility.MLog.Info("I need to do something to make this done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
 					ParseSlackUserInput(ev.Msg.Text)
 				}
-				//b, err := json.Marshal(ev)
-				//if err != nil {
-				//	log.Println(err)
-				//	return
-				//}
-				//str := fmt.Sprintf("%s", b)
-				//utility.MLog.Debug(str)
-				//getuserinfo from slack
-				//slackUserInfo,err:=controller.GetUserInfo(ev.User,lisaapi,configuration.SlackTeams.ChannelKey)
-				//if err !=nil{
-				//	utility.MLog.Error(err)
-				//}
-				//log.Println(slackUserInfo)
 				if doesNeedingHandleMessage(ev) {
 					subType := ev.Msg.SubType
 					switch subType {
@@ -153,31 +126,31 @@ func getParamIndex(parts []string, word string) int {
 	}
 	return -1
 }
-func setUserInputSingleStringValue(parts []string, paramword string) *string{
+func setUserInputSingleStringValue(parts []string, paramword string) *string {
 	isOkCount := 0
 	totalkeyparams := 0
 	index := getParamIndex(parts, paramword)
 	if index > 0 {
 		totalkeyparams += 1
 		//get the value which is the next on the slice
-		value :=parts[index+1]
+		value := parts[index+1]
 		isOkCount += 1
 		return &value
 	}
 	return nil
 }
-func setUserInputSingleBoolValue(parts []string, paramword string)  bool {
-	strv:=setUserInputSingleStringValue(parts,paramword)
-	if strv!= nil {
-		isBool,_:=strconv.ParseBool(*strv)
+func setUserInputSingleBoolValue(parts []string, paramword string) bool {
+	strv := setUserInputSingleStringValue(parts, paramword)
+	if strv != nil {
+		isBool, _ := strconv.ParseBool(*strv)
 		return isBool
 	}
 	return false
 }
-func setUserInputSingleFloatValue(parts []string, paramword string) float64{
-	strv:=setUserInputSingleStringValue(parts,paramword)
+func setUserInputSingleFloatValue(parts []string, paramword string) float64 {
+	strv := setUserInputSingleStringValue(parts, paramword)
 	//get the value which is the next on the slice
-	if strv != nil  {
+	if strv != nil {
 		fl, err := strconv.ParseFloat(*strv, 64)
 		if err != nil {
 			utility.MLog.Error(err)
@@ -186,50 +159,65 @@ func setUserInputSingleFloatValue(parts []string, paramword string) float64{
 	}
 	return 0
 }
-func setUserinputAsRange( parts []string, paramword string) (*model.Range,bool) {
-	isOkCount :=0
-	totalkeyparams:=0
-	index:=getParamIndex(parts, paramword)
-	if index >0 {
-		totalkeyparams +=1
-		value:=parts[index+1]
+func setUserinputAsRange(parts []string, paramword string) (*model.Range, bool) {
+	isOkCount := 0
+	totalkeyparams := 0
+	index := getParamIndex(parts, paramword)
+	if index > 0 {
+		totalkeyparams += 1
+		value := parts[index+1]
 		var err1 error
-		rangeValue:=model.Range{}
-		if strings.HasSuffix(value,"+"){
+		rangeValue := model.Range{}
+		if strings.HasSuffix(value, "+") {
 			//get the value before the +
-			charArray :=[]rune(value)
-			len:=len(charArray)
-			subvalue:=string(charArray[0: len-1])
-			rangeValue.Min, err1 = strconv.ParseFloat(subvalue,64)
-			if err1 != nil  {
+			charArray := []rune(value)
+			len := len(charArray)
+			subvalue := string(charArray[0 : len-1])
+			rangeValue.Min, err1 = strconv.ParseFloat(subvalue, 64)
+			if err1 != nil {
 				utility.MLog.Error(err1)
 			} else {
-				isOkCount +=1
+				isOkCount += 1
 			}
 			rangeValue.Max = 100
-		} else if strings.HasSuffix(value,"-") {
-			charArray:=[]rune(value)
-			len:=len(charArray)
-			subvalue:=string(charArray[0: len-1])
-			rangeValue.Max, err1 = strconv.ParseFloat(subvalue,64)
-			if err1 != nil  {
+		} else if strings.HasSuffix(value, "-") {
+			charArray := []rune(value)
+			len := len(charArray)
+			subvalue := string(charArray[0 : len-1])
+			rangeValue.Max, err1 = strconv.ParseFloat(subvalue, 64)
+			if err1 != nil {
 				utility.MLog.Error(err1)
 			} else {
-				isOkCount +=1
+				isOkCount += 1
 			}
 			rangeValue.Min = 0
 		} else {
-			rangeValue.Min,err1= strconv.ParseFloat(value,64)
-			if err1 != nil  {
+			rangeValue.Min, err1 = strconv.ParseFloat(value, 64)
+			if err1 != nil {
 				utility.MLog.Error(err1)
 			} else {
-				isOkCount +=1
+				isOkCount += 1
 			}
 			rangeValue.Max = rangeValue.Min
 		}
 		return &rangeValue, isOkCount == totalkeyparams
 	}
-	return nil,false
+	return nil, false
+}
+func getUserFiltersByUserId(userId int) (*model.Filters, error) {
+	filterstr, _ := Data.GetSlackUserFilter(userId)
+	if filterstr != nil {
+		//turn that into the object
+		var filters model.Filters
+		err := json.Unmarshal([]byte(filterstr.Filters), &filters)
+		if err != nil {
+			utility.MLog.Error(err)
+			return nil, err
+		} else {
+			return &filters, nil
+		}
+	}
+	return nil, nil
 }
 func ParseSlackUserInput(userInput string) {
 	//parse the userinput by delimiter white space
@@ -243,106 +231,143 @@ func ParseSlackUserInput(userInput string) {
 			case "!addlocation":
 				//make sure the user is in subscription status, balance is greater than 0
 				if isUserInGoodStatus {
-					addlocationcmd := model.AddLocationCmd{}
-					addlocationcmd.Latitude = setUserInputSingleFloatValue(parts,"lan")
-					addlocationcmd.Longitude = setUserInputSingleFloatValue(parts,"lng")
-					addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
-					if (addlocationcmd.Longitude !=0 && addlocationcmd.Latitude !=0 && addlocationcmd.Radius !=0) {
-						//addlocation is successful then further handle is required
-						//check db to see if user already has the location alter, if not add it else update it
-						//load the user filter from db
-						userfilters := model.Filters{}
-						userfilters.AddLocation = &model.AddLocation{}
-						userfilters.AddLocation.Radius = &(addlocationcmd.Radius)
-						userfilters.AddLocation.Longitude = addlocationcmd.Longitude
-						userfilters.AddLocation.Latitude = addlocationcmd.Latitude
-						byteArray, _ := json.Marshal(userfilters)
-						//save to db
-						Data.InsertSlackUserFilter(1, string(byteArray))
+					userfilters, err := getUserFiltersByUserId(1)
+					if err != nil {
+
+					} else {
+						if userfilters != nil {
+							addlocationcmd := model.AddLocationCmd{}
+							addlocationcmd.Latitude = setUserInputSingleFloatValue(parts, "lan")
+							addlocationcmd.Longitude = setUserInputSingleFloatValue(parts, "lng")
+							addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
+							if addlocationcmd.Longitude != 0 && addlocationcmd.Latitude != 0 && addlocationcmd.Radius != 0 {
+								//addlocation is successful then further handle is required
+								//check db to see if user already has the location alter, if not add it else update it
+								//load the user filter from db
+								userfilters.AddLocation.Radius = &(addlocationcmd.Radius)
+								userfilters.AddLocation.Longitude = addlocationcmd.Longitude
+								userfilters.AddLocation.Latitude = addlocationcmd.Latitude
+								//save to db
+								byteArray, _ := json.Marshal(userfilters)
+								Data.InsertSlackUserFilter(1, string(byteArray))
+							}
+						}
 					}
 				}
 			case "!addallmons":
 				if isUserInGoodStatus {
-					addallmonscmd := model.AddAllMonsCmd{}
-					lvlranged,_:= setUserinputAsRange(parts,"lvl")
-					addallmonscmd.Lvl = lvlranged
-					ivranged,_:= setUserinputAsRange(parts,"iv")
-					addallmonscmd.IV = ivranged
+					userfilters, err := getUserFiltersByUserId(1)
+					if err != nil {
+
+					} else{
+						lvlranged, _ := setUserinputAsRange(parts, "lvl")
+						ivranged, _ := setUserinputAsRange(parts, "iv")
+						userfilters.AddNotifyAll.Level = lvlranged
+						userfilters.AddNotifyAll.Iv = ivranged
+						//save to db
+						byteArray, _ := json.Marshal(userfilters)
+						Data.InsertSlackUserFilter(1, string(byteArray))
+					}
 				}
 			case "!addmon":
-				cmd := model.AddMonCmd{}
-				lvlranged,_:= setUserinputAsRange(parts,"lvl")
-				cmd.Lvl = lvlranged
-				ivranged,_:= setUserinputAsRange(parts,"iv")
-				cmd.IV = ivranged
-				cpranged,_:= setUserinputAsRange(parts,"cp")
-				cmd.CP = cpranged
-				namestr:=setUserInputSingleStringValue(parts,"name")
-				if namestr != nil  {
-					cmd.Name = *namestr
+				if isUserInGoodStatus {
+					userfilters, err := getUserFiltersByUserId(1)
+					if err != nil {
+
+					} else{
+						namestr := setUserInputSingleStringValue(parts, "name")
+						lvlranged, _ := setUserinputAsRange(parts, "lvl")
+						ivranged, _ := setUserinputAsRange(parts, "iv")
+						cpranged, _ := setUserinputAsRange(parts, "cp")
+						if namestr != nil {
+							//check to see if the name is in the filters already
+loop:
+							for index, value :=range(userfilters.AddNotifies){
+								if strings.EqualFold(value.Mon.Name,*namestr){
+									if ivranged != nil{
+										userfilters.AddNotifies[index].Iv = ivranged
+									}
+									if lvlranged !=nil {
+										userfilters.AddNotifies[index].Level = lvlranged
+									}
+									if cpranged !=nil {
+										userfilters.AddNotifies[index].Cp = cpranged
+									}
+									break loop
+								}
+							}
+							//didn't find anything then
+							//append a new record to the end of the existing
+							id :=123
+							mon :=model.NameAndID{Name:*namestr,Id:id}
+							newone:=model.AddNotify{Level:lvlranged,Iv:ivranged,Cp:cpranged, Mon:&mon}
+							userfilters.AddNotifies=append(userfilters.AddNotifies,newone)
+							//save to db
+							byteArray, _ := json.Marshal(userfilters)
+							Data.InsertSlackUserFilter(1, string(byteArray))
+						}
+					}
 				}
-
-
 			case "!addallraid":
-				cmd:=model.AddAllRaidCmd{}
-				lvlranged,_:= setUserinputAsRange(parts,"lvl")
+				cmd := model.AddAllRaidCmd{}
+				lvlranged, _ := setUserinputAsRange(parts, "lvl")
 				cmd.Lvl = lvlranged
-				sponsorValue := setUserInputSingleBoolValue(parts,"sponsored")
+				sponsorValue := setUserInputSingleBoolValue(parts, "sponsored")
 				cmd.Sponsored = sponsorValue
-				boostedValue:=setUserInputSingleBoolValue(parts,"boosted")
+				boostedValue := setUserInputSingleBoolValue(parts, "boosted")
 				cmd.Boosted = boostedValue
-				teamNamestr:= setUserInputSingleStringValue(parts,"team")
-				if teamNamestr!=nil {
+				teamNamestr := setUserInputSingleStringValue(parts, "team")
+				if teamNamestr != nil {
 					cmd.Team = *teamNamestr
 				}
-				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
-				if gymNamestr!=nil {
+				gymNamestr := setUserInputSingleStringValue(parts, "gym")
+				if gymNamestr != nil {
 					cmd.GymName = *gymNamestr
 				}
 			case "!addraid":
-				cmd:=model.AddRaidCmd{}
-				lvlranged,_:= setUserinputAsRange(parts,"lvl")
+				cmd := model.AddRaidCmd{}
+				lvlranged, _ := setUserinputAsRange(parts, "lvl")
 				cmd.Lvl = lvlranged
-				namestr:=setUserInputSingleStringValue(parts,"name")
+				namestr := setUserInputSingleStringValue(parts, "name")
 				if namestr != nil {
 					cmd.Name = *namestr
 				}
-				sponsorValue := setUserInputSingleBoolValue(parts,"sponsored")
+				sponsorValue := setUserInputSingleBoolValue(parts, "sponsored")
 				cmd.Sponsored = sponsorValue
-				boostedValue:=setUserInputSingleBoolValue(parts,"boosted")
+				boostedValue := setUserInputSingleBoolValue(parts, "boosted")
 				cmd.Boosted = boostedValue
-				teamNamestr:= setUserInputSingleStringValue(parts,"team")
-				if teamNamestr!=nil {
+				teamNamestr := setUserInputSingleStringValue(parts, "team")
+				if teamNamestr != nil {
 					cmd.Team = *teamNamestr
 				}
-				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
-				if gymNamestr!=nil {
+				gymNamestr := setUserInputSingleStringValue(parts, "gym")
+				if gymNamestr != nil {
 					cmd.GymName = *gymNamestr
 				}
 			case "!addegg":
-				cmd:=model.AddEggCmd{}
-				lvlranged,_:= setUserinputAsRange(parts,"lvl")
+				cmd := model.AddEggCmd{}
+				lvlranged, _ := setUserinputAsRange(parts, "lvl")
 				cmd.Lvl = lvlranged
-				sponsorValue := setUserInputSingleBoolValue(parts,"sponsored")
+				sponsorValue := setUserInputSingleBoolValue(parts, "sponsored")
 				cmd.Sponsored = sponsorValue
-				boostedValue:=setUserInputSingleBoolValue(parts,"boosted")
+				boostedValue := setUserInputSingleBoolValue(parts, "boosted")
 				cmd.Boosted = boostedValue
-				teamNamestr:= setUserInputSingleStringValue(parts,"team")
-				if teamNamestr!=nil {
+				teamNamestr := setUserInputSingleStringValue(parts, "team")
+				if teamNamestr != nil {
 					cmd.Team = *teamNamestr
 				}
-				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
-				if gymNamestr!=nil {
+				gymNamestr := setUserInputSingleStringValue(parts, "gym")
+				if gymNamestr != nil {
 					cmd.GymName = *gymNamestr
 				}
 			case "!addgym":
-				cmd:=model.AddGymCmd{}
-				teamNamestr:= setUserInputSingleStringValue(parts,"team")
-				if teamNamestr!=nil {
+				cmd := model.AddGymCmd{}
+				teamNamestr := setUserInputSingleStringValue(parts, "team")
+				if teamNamestr != nil {
 					cmd.Team = *teamNamestr
 				}
-				gymNamestr:=setUserInputSingleStringValue(parts,"gym")
-				if gymNamestr!=nil {
+				gymNamestr := setUserInputSingleStringValue(parts, "gym")
+				if gymNamestr != nil {
 					cmd.GymName = *gymNamestr
 				}
 			case "!showlocation":
