@@ -7,6 +7,7 @@ import (
 	"github.com/richardsang2008/BotManager/model"
 	"github.com/richardsang2008/BotManager/utility"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 var (
@@ -144,10 +145,33 @@ func (s *DataAccessLay) InsertSlackUserFilter(userId int, filters string) error 
 		return nil
 	}
 }
-func (s *DataAccessLay) GetSlackDBUserByUserId(userId string) (*model.SlackDBUser, error) {
+func (s *DataAccessLay) AddSlackDBUser(user *model.SlackUser, regionid int ) error {
+	//if user is not found
+	foundUser, err:=s.GetSlackDBUserByEmail(user.Email,regionid)
+	if err != nil {
+		utility.MLog.Error(err)
+		return err
+	} else {
+		if foundUser != nil {
+			//not null means there are record found then check to see if needs update
+			if strings.EqualFold(user.DisplayName, foundUser.Notifyname) {
+				DataBase.Model(&foundUser).Updates(model.SlackDBUser{Notifyname:user.DisplayName,Fname:user.FirstName,Lname:user.LastName})
+				return nil
+			}
+		} else {
+			record:= model.SlackDBUser{ChannelId:regionid, Referenceid:user.ID,Fname:user.FirstName,Lname:user.LastName,
+			Notifyname:user.DisplayName, StatusId:user.StatusID, Email:user.Email, Phone:user.Phone,
+			Isadmin:user.IsAdmin, Isowner:user.IsOwner,	Isbot:user.IsBot, Realname:user.Name, LevelId:user.LevelID}
+			DataBase.Create(&record)
+			return nil
+		}
+	}
+	return nil
+}
+func (s *DataAccessLay) GetSlackDBUserByUserId(userId string,regionId int) (*model.SlackDBUser, error) {
 	utility.MLog.Debug("DataAccessLay GetSlackDBUserByUserId starting")
 	var dbusers []model.SlackDBUser
-	if err := DataBase.Where("reference_id=?", userId).Find(&dbusers).Error; err != nil {
+	if err := DataBase.Where("reference_id=? and channel_id=?", userId, regionId).Find(&dbusers).Error; err != nil {
 		utility.MLog.Error("DataAccessLay GetSlackDBUserByUserId failed "+ err.Error())
 		return nil,err
 	} else {
@@ -162,10 +186,10 @@ func (s *DataAccessLay) GetSlackDBUserByUserId(userId string) (*model.SlackDBUse
 		}
 	}
 }
-func (s *DataAccessLay) GetSlackDBUserByEmail(email string)(*model.SlackDBUser, error) {
+func (s *DataAccessLay) GetSlackDBUserByEmail(email string, regionId int )(*model.SlackDBUser, error) {
 	utility.MLog.Debug("DataAccessLay GetSlackDBUserByUserId starting")
 	var dbusers []model.SlackDBUser
-	if err := DataBase.Where("email=?", email).Find(&dbusers).Error; err != nil {
+	if err := DataBase.Where("email=? and channel_id=?", email,regionId).Find(&dbusers).Error; err != nil {
 		utility.MLog.Error("DataAccessLay GetSlackDBUserByUserId failed "+ err.Error())
 		return nil,err
 	} else {
