@@ -26,8 +26,11 @@ func (s *DataAccessLay) New(user, pass, host, dbname string) {
 	if err != nil {
 		utility.MLog.Panic("Error creating connection pool: " + err.Error())
 	}
+	DataBase.LogMode(true)
+	DataBase.SetLogger(utility.MLog.GetLogger())
 	//create tables
-	DataBase.AutoMigrate(&model.PogoAccount{}, &model.SlackDBMessage{}, &model.SlackDBUserFilter{})
+	DataBase.AutoMigrate(&model.PogoAccount{}, &model.SlackDBMessage{}, &model.SlackDBUserFilter{},
+	&model.SlackDBUser{}, &model.SlackRegion{})
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		if defaultTableName == "pogo_accounts" {
 			defaultTableName = "account"
@@ -43,6 +46,15 @@ func (s *DataAccessLay) New(user, pass, host, dbname string) {
 	if !DataBase.HasTable(&model.SlackDBUserFilter{}) {
 		DataBase.CreateTable(&model.SlackDBUserFilter{})
 	}
+	if !DataBase.HasTable(&model.SlackDBUser{}) {
+		DataBase.CreateTable(&model.SlackDBUser{})
+	}
+	if !DataBase.HasTable(&model.SlackRegion{}){
+		DataBase.CreateTable(&model.SlackRegion{})
+	}
+		//DataBase.Create()
+
+
 }
 func (s *DataAccessLay) Close() {
 	utility.MLog.Info("Closing database")
@@ -80,12 +92,26 @@ func (s *DataAccessLay) GetAccountByUserName(username string) (*[]model.PogoAcco
 func (s *DataAccessLay) GetAccountByLevel(minlevel, maxlevel int) (*[]model.PogoAccount, error) {
 	utility.MLog.Debug("DataAccessLay GetAccountByLevel starting")
 	var accounts []model.PogoAccount
-	if err := DataBase.Find(&accounts, "level>=? and level<=?", minlevel, maxlevel).Error; err != nil {
+	if err := DataBase.Where("level>=? and level<=?", minlevel, maxlevel).Find(&accounts ).Error; err != nil {
 		utility.MLog.Error("DataAccessLay GetAccountByUserName failed " + err.Error())
 		return nil, err
 	} else {
 		utility.MLog.Debug("DataAccessLay GetAccountByUserName end")
 		return &accounts, nil
+	}
+}
+func (s *DataAccessLay) GetSlackRegions(mode string, regionid int) (*model.SlackRegion,error){
+	var regions []model.SlackRegion
+	//and region_id=?",mode,regionid)
+	if err :=DataBase.Where("mode =? and region_id=?",mode,regionid).Find(&regions).Error;err !=nil {
+		utility.MLog.Error("DataAccessLay GetSlackRegions failed" + err.Error())
+		return nil, err
+	} else {
+		if len(regions) >0 {
+			return &regions[0],nil
+		} else {
+			return nil,nil
+		}
 	}
 }
 
@@ -125,7 +151,7 @@ func (s *DataAccessLay) GetSlackUserFilter(userId int) (*model.SlackDBUserFilter
 		}
 	}
 }
-func (s *DataAccessLay) InsertSlackUserFilter(userId int, filters string) error {
+func (s *DataAccessLay) InsertSlackUserFilter(userId uint, filters string) error {
 	utility.MLog.Debug("DataAccessLay InsertSlackUserFilter starting")
 	var userfilters []model.SlackDBUserFilter
 	if err := DataBase.Where("user_id=?", userId).Find(&userfilters).Error; err != nil {
@@ -145,28 +171,28 @@ func (s *DataAccessLay) InsertSlackUserFilter(userId int, filters string) error 
 		return nil
 	}
 }
-func (s *DataAccessLay) AddSlackDBUser(user *model.SlackUser, regionid int ) error {
+func (s *DataAccessLay) AddSlackDBUser(user *model.SlackUser, regionid int ) (uint ,error) {
 	//if user is not found
 	foundUser, err:=s.GetSlackDBUserByEmail(user.Email,regionid)
 	if err != nil {
 		utility.MLog.Error(err)
-		return err
+		return 0,err
 	} else {
 		if foundUser != nil {
 			//not null means there are record found then check to see if needs update
 			if strings.EqualFold(user.DisplayName, foundUser.Notifyname) {
-				DataBase.Model(&foundUser).Updates(model.SlackDBUser{Notifyname:user.DisplayName,Fname:user.FirstName,Lname:user.LastName})
-				return nil
+				DataBase.Model(&foundUser).Updates(model.SlackDBUser{Notifyname:user.Name,Fname:user.FirstName,Lname:user.LastName})
+				return foundUser.ID,nil
 			}
 		} else {
-			record:= model.SlackDBUser{ChannelId:regionid, Referenceid:user.ID,Fname:user.FirstName,Lname:user.LastName,
-			Notifyname:user.DisplayName, StatusId:user.StatusID, Email:user.Email, Phone:user.Phone,
-			Isadmin:user.IsAdmin, Isowner:user.IsOwner,	Isbot:user.IsBot, Realname:user.Name, LevelId:user.LevelID}
+			record:= model.SlackDBUser{ChannelId:regionid, Referenceid:user.ReferenceID,Fname:user.FirstName,Lname:user.LastName,
+			Notifyname:user.Name, StatusId:user.StatusID, Email:user.Email, Phone:user.Phone,
+			Isadmin:user.IsAdmin, Isowner:user.IsOwner,	Isbot:user.IsBot, Realname:user.Name,AccessRights: model.RightsUSER.String()}
 			DataBase.Create(&record)
-			return nil
+			return record.ID,nil
 		}
 	}
-	return nil
+	return 0,nil
 }
 func (s *DataAccessLay) GetSlackDBUserByUserId(userId string,regionId int) (*model.SlackDBUser, error) {
 	utility.MLog.Debug("DataAccessLay GetSlackDBUserByUserId starting")

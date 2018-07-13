@@ -42,9 +42,9 @@ func (u *PokeUtility) CalculateTwoPointsDistanceInUnits(p1lan, p1lng, p2lan, p2l
 	dist := p.GreatCircleDistance(p2)
 	ret := 0.0
 	switch meansure {
-	case model.Miles:
+	case model.MeansureUnitMILES:
 		ret = dist / 0.621371
-	case model.Meters:
+	case model.MeansureUnitMETERS:
 		ret = dist
 	default:
 		ret = dist

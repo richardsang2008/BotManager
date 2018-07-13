@@ -25,8 +25,12 @@ type SlackController struct {
 	NSQController NSQController
 }
 
-func (c *SlackController) SlackSelfHost(lisaslacktoken string, masterslackToken string, botslackToken string, produceraddress string, consumeraddress string, topic string, channel string, wg *sync.WaitGroup) {
+func (c *SlackController) SlackSelfHost(env string,lisaslacktoken string, masterslackToken string, botslackToken string, produceraddress string, consumeraddress string, topic string, channel string, wg *sync.WaitGroup) {
 	wg.Add(1)
+	re,_:=Data.GetSlackRegions(env,1)
+	lisaslacktoken =re.Lisaslacktoken
+	masterslackToken= re.MasterslackToken
+	botslackToken = re.MasterslackToken
 	c.Lisaapi = slack.New(lisaslacktoken)
 	c.Masterapi = slack.New(masterslackToken)
 	c.Botapi = slack.New(botslackToken)
@@ -40,9 +44,7 @@ Loop:
 	for {
 		select {
 		case msg := <-rtm.IncomingEvents:
-
 			switch ev := msg.Data.(type) {
-
 			case *slack.ConnectedEvent:
 				//IMMarketedEvent, GroupMarkedEvent, ChannelMarkedEvent, MessageEvent needs to be tracked so they can be deleted later
 			case *slack.IMMarkedEvent:
@@ -67,14 +69,13 @@ Loop:
 				if len(ev.User) == 0 {
 					continue
 				}
-
 				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Msg.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Msg.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
 				//byteArray, _:= json.Marshal(ev.Msg)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
-				slackUser, err := c.SlackUtility.GetUserInfo(ev.User, c.Lisaapi)
+				slackUser, err := getUserInfo(ev.User, c.Lisaapi,1)
 				//this is the user information
 				if err != nil {
 					utility.MLog.Error(err)
@@ -85,7 +86,7 @@ Loop:
 				//if the message is not starting with ! then nothing
 				if strings.HasPrefix(ev.Msg.Text, "!") {
 					utility.MLog.Info("I need to do something to make this done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
-					ParseSlackUserInput(ev.Msg.Text)
+					ParseSlackUserInput(slackUser.DBId,ev.Msg.Text)
 				}
 				if doesNeedingHandleMessage(ev) {
 					subType := ev.Msg.SubType
@@ -115,6 +116,45 @@ Loop:
 		}
 	}
 	wg.Wait()
+}
+func getUserInfo(userid string, api *slack.Client, regionid int) (*model.SlackUser, error){
+	c:=utility.SlackUtility{}
+	user,err := c.GetUserInfo(userid,api)
+	if err != nil {
+		utility.MLog.Error(err)
+		return nil, err
+	}else {
+		//check user in db
+		dbuser,err:=Data.GetSlackDBUserByEmail(user.Email,regionid)
+		if err!=nil {
+			utility.MLog.Error(err)
+			return nil,err
+		} else{
+			if dbuser!= nil {
+				//populate the db stuff
+				if !strings.EqualFold(dbuser.Notifyname, user.DisplayName) {
+					id,err:=Data.AddSlackDBUser(user,regionid)
+					if err!=nil {
+						utility.MLog.Error(err)
+						return nil, err
+					}
+					dbuser.ID =id
+				}
+				user.DBId = dbuser.ID
+				return user,nil
+			} else {
+				//add user into db
+				id,err:=Data.AddSlackDBUser(user,regionid)
+				if err!=nil {
+					utility.MLog.Error(err)
+					return nil, err
+				}
+				user.AccessRights = model.RightsUSER
+				user.DBId =id
+				return user,nil
+			}
+		}
+	}
 }
 func getParamIndex(parts []string, word string) int {
 	if len(parts) > 0 {
@@ -219,7 +259,7 @@ func getUserFiltersByUserId(userId int) (*model.Filters, error) {
 	}
 	return nil, nil
 }
-func ParseSlackUserInput(userInput string) {
+func ParseSlackUserInput(userid uint,userInput string) {
 	//parse the userinput by delimiter white space
 	if strings.HasPrefix(userInput, "!") {
 		parts := strings.Split(userInput, " ")
@@ -249,7 +289,7 @@ func ParseSlackUserInput(userInput string) {
 								userfilters.AddLocation.Latitude = addlocationcmd.Latitude
 								//save to db
 								byteArray, _ := json.Marshal(userfilters)
-								Data.InsertSlackUserFilter(1, string(byteArray))
+								Data.InsertSlackUserFilter(userid, string(byteArray))
 							}
 						}
 					}

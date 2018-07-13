@@ -91,17 +91,17 @@ func main() {
 		var level model.LogLevel
 		switch logLevel {
 		case "debug":
-			level = model.DEBUG
+			level = model.LogLevelDEBUG
 		case "info":
-			level = model.INFO
+			level = model.LogLevelINFO
 		case "error":
-			level = model.ERROR
+			level = model.LogLevelERROR
 		case "warning":
-			level = model.WARNING
+			level = model.LogLevelWARNING
 		case "panic":
-			level = model.PANIC
+			level = model.LogLevelPANIC
 		default:
-			level = model.ERROR
+			level = model.LogLevelERROR
 		}
 		logFile := viper.GetString(envLogFile)
 
@@ -254,7 +254,8 @@ func main() {
 		slackcontroller :=controller.SlackController{}
 		msgChannel:="slack_messages_channel"
 		msgTopic :="slack_poke_messages"
-		slackcontroller.SlackSelfHost(slackLisaslacktoken,slackMasterslackToken,slackBotslackToken,messageQueueProduceraddress,messageQueueConsumerlookupaddress,msgTopic,msgChannel,wg)
+
+		slackcontroller.SlackSelfHost(env,slackLisaslacktoken,slackMasterslackToken,slackBotslackToken,messageQueueProduceraddress,messageQueueConsumerlookupaddress,msgTopic,msgChannel,wg)
 
 		//webhosting
 		/*

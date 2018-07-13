@@ -7,15 +7,8 @@ type BotMessage struct {
 	Message   string
 	ChannelID string
 }
-type Rights int
 
-const (
-	USER Rights = 1 + iota
-	MODERATOR
-	ADMINISTRATOR
-	SUPER
-	OWNER
-)
+
 
 type SlackUser struct {
 	ID           string
@@ -36,6 +29,7 @@ type SlackUser struct {
 	IsOwner      bool
 	IsBot        bool
 	AccessRights Rights
+	DBId uint
 }
 type AddLocationCmd struct {
 	Latitude  float64
@@ -86,7 +80,7 @@ type SlackDBMessage struct {
 
 type SlackDBUserFilter struct {
 	gorm.Model
-	UserId  int
+	UserId  uint
 	Filters string
 }
 
@@ -104,5 +98,13 @@ type SlackDBUser struct {
 	Isowner      bool
 	Isbot        bool
 	Realname     string
-	LevelId      int
+	AccessRights      string
+}
+type SlackRegion struct {
+	gorm.Model
+	Mode string
+	RegionId int
+	MasterslackToken string
+	BotslackToken string
+	Lisaslacktoken string
 }

@@ -50,31 +50,31 @@ func (l *Log) New(filename string, logLevel model.LogLevel) *logrus.Logger {
 	}
 	log = logrus.New()
 	switch logLevel {
-	case model.DEBUG:
+	case model.LogLevelDEBUG:
 		log.SetLevel(logrus.DebugLevel)
 		log.Hooks.Add(lfshook.NewHook(
 			pathMap,
 			&logrus.TextFormatter{},
 		))
-	case model.INFO:
+	case model.LogLevelINFO:
 		log.SetLevel(logrus.InfoLevel)
 		log.Hooks.Add(lfshook.NewHook(
 			pathMap,
 			&logrus.JSONFormatter{},
 		))
-	case model.ERROR:
+	case model.LogLevelERROR:
 		log.SetLevel(logrus.ErrorLevel)
 		log.Hooks.Add(lfshook.NewHook(
 			pathMap,
 			&logrus.JSONFormatter{},
 		))
-	case model.WARNING:
+	case model.LogLevelWARNING:
 		log.SetLevel(logrus.WarnLevel)
 		log.Hooks.Add(lfshook.NewHook(
 			pathMap,
 			&logrus.JSONFormatter{},
 		))
-	case model.PANIC:
+	case model.LogLevelPANIC:
 		log.SetLevel(logrus.FatalLevel)
 		log.Hooks.Add(lfshook.NewHook(
 			pathMap,
@@ -89,7 +89,9 @@ func (l *Log) New(filename string, logLevel model.LogLevel) *logrus.Logger {
 	}
 	return log
 }
-
+func (l *Log) GetLogger() *logrus.Logger {
+	return log
+}
 func (l *Log) Debug(args ...interface{}) {
 	log.Debug(args)
 }
