@@ -11,8 +11,8 @@ func FilterPokeMinerInputForAllUsers(data []byte, usersfilters []string, genfenc
 	u := utility.PokeUtility{}
 	//input pokeminer message
 	inputData, isWithinTime, regionstr, err := u.ParsePokeMinerInput(data, genfence_zones, true)
-	if regionstr == nil || *regionstr == "" {
-		utility.MLog.Debug("Region can not be determined or not within the region so no filter")
+	if regionstr == nil || *regionstr == ""{
+		utility.MLog.Debug("RegionName can not be determined or not within the region so no filter")
 		return
 	}
 	//make sure the data disappear time is > now
@@ -49,6 +49,6 @@ func tryHandleMsgAndFilters(inputData interface{}, userfiltersline string, regio
 		}
 
 	} else {
-		utility.MLog.Debug("Region not match so no data will be sent")
+		utility.MLog.Debug("RegionName not match so no data will be sent")
 	}
 }

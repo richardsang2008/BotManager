@@ -229,11 +229,11 @@ type UserRegion struct {
 	Region string `json:"Region"`
 }
 type Region struct {
-	Region string        `json:"Region"`
-	Zone   []GeoLocation `json:"zone"`
+	RegionName string        `json:"regionname"`
+	Zone       []GeoLocation `json:"zone"`
 }
 type Regions struct {
-	Regions []Region `json:"Regions"`
+	Regions []Region `json:"regions"`
 }
 type Filters struct {
 	UserRegion    *UserRegion    `json:"UserRegion"`

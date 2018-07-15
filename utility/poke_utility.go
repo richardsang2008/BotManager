@@ -169,6 +169,7 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 			}
 			//find out which region
 			regionstr = u.whichRegion(regions, pokemessage.Message.Latitude, pokemessage.Message.Longitude)
+
 			pokemessage.Message.Region = regionstr
 			ret = pokemessage
 		case "raid":

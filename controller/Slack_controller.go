@@ -27,10 +27,12 @@ type SlackController struct {
 
 func (c *SlackController) SlackSelfHost(env string,lisaslacktoken string, masterslackToken string, botslackToken string, produceraddress string, consumeraddress string, topic string, channel string, wg *sync.WaitGroup) {
 	wg.Add(1)
-	re,_:=Data.GetSlackRegions(env,1)
-	lisaslacktoken =re.Lisaslacktoken
-	masterslackToken= re.MasterslackToken
-	botslackToken = re.MasterslackToken
+	//default to one mpk_region
+	slackregion,_:=Data.GetSlackRegionsByModeAndRegionName(env,"mpk_region")
+
+	lisaslacktoken =slackregion.Lisaslacktoken
+	masterslackToken= slackregion.MasterslackToken
+	botslackToken = slackregion.MasterslackToken
 	c.Lisaapi = slack.New(lisaslacktoken)
 	c.Masterapi = slack.New(masterslackToken)
 	c.Botapi = slack.New(botslackToken)
@@ -69,13 +71,14 @@ Loop:
 				if len(ev.User) == 0 {
 					continue
 				}
-				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Msg.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: slackregion.ID, ChannelId: ev.Msg.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Msg.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
 				//byteArray, _:= json.Marshal(ev.Msg)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
-				slackUser, err := getUserInfo(ev.User, c.Lisaapi,1)
+
+				slackUser, err := getUserInfo(ev.User, c.Lisaapi,slackregion.ID)
 				//this is the user information
 				if err != nil {
 					utility.MLog.Error(err)
@@ -86,7 +89,7 @@ Loop:
 				//if the message is not starting with ! then nothing
 				if strings.HasPrefix(ev.Msg.Text, "!") {
 					utility.MLog.Info("I need to do something to make this done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
-					ParseSlackUserInput(slackUser.DBId,ev.Msg.Text)
+					ParseSlackUserInput(slackUser.DBId,ev.Msg.Text,slackregion.ID)
 				}
 				if doesNeedingHandleMessage(ev) {
 					subType := ev.Msg.SubType
@@ -117,7 +120,7 @@ Loop:
 	}
 	wg.Wait()
 }
-func getUserInfo(userid string, api *slack.Client, regionid int) (*model.SlackUser, error){
+func getUserInfo(userid string, api *slack.Client, regionId uint) (*model.SlackUser, error){
 	c:=utility.SlackUtility{}
 	user,err := c.GetUserInfo(userid,api)
 	if err != nil {
@@ -125,7 +128,7 @@ func getUserInfo(userid string, api *slack.Client, regionid int) (*model.SlackUs
 		return nil, err
 	}else {
 		//check user in db
-		dbuser,err:=Data.GetSlackDBUserByEmail(user.Email,regionid)
+		dbuser,err:= Data.GetSlackDBUserByEmail(user.Email,regionId)
 		if err!=nil {
 			utility.MLog.Error(err)
 			return nil,err
@@ -133,7 +136,7 @@ func getUserInfo(userid string, api *slack.Client, regionid int) (*model.SlackUs
 			if dbuser!= nil {
 				//populate the db stuff
 				if !strings.EqualFold(dbuser.Notifyname, user.DisplayName) {
-					id,err:=Data.AddSlackDBUser(user,regionid)
+					id,err:=Data.AddSlackDBUser(user, regionId)
 					if err!=nil {
 						utility.MLog.Error(err)
 						return nil, err
@@ -144,7 +147,7 @@ func getUserInfo(userid string, api *slack.Client, regionid int) (*model.SlackUs
 				return user,nil
 			} else {
 				//add user into db
-				id,err:=Data.AddSlackDBUser(user,regionid)
+				id,err:=Data.AddSlackDBUser(user,regionId)
 				if err!=nil {
 					utility.MLog.Error(err)
 					return nil, err
@@ -259,7 +262,7 @@ func getUserFiltersByUserId(userId int) (*model.Filters, error) {
 	}
 	return nil, nil
 }
-func ParseSlackUserInput(userid uint,userInput string) {
+func ParseSlackUserInput(userid uint,userInput string, regionid uint) {
 	//parse the userinput by delimiter white space
 	if strings.HasPrefix(userInput, "!") {
 		parts := strings.Split(userInput, " ")
@@ -276,6 +279,7 @@ func ParseSlackUserInput(userid uint,userInput string) {
 
 					} else {
 						if userfilters != nil {
+							//userfilter does  exit
 							addlocationcmd := model.AddLocationCmd{}
 							addlocationcmd.Latitude = setUserInputSingleFloatValue(parts, "lan")
 							addlocationcmd.Longitude = setUserInputSingleFloatValue(parts, "lng")
@@ -290,6 +294,26 @@ func ParseSlackUserInput(userid uint,userInput string) {
 								//save to db
 								byteArray, _ := json.Marshal(userfilters)
 								Data.InsertSlackUserFilter(userid, string(byteArray))
+							}
+						} else {
+							//userfilter does  exit
+							addlocationcmd := model.AddLocationCmd{}
+							addlocationcmd.Latitude = setUserInputSingleFloatValue(parts, "lan")
+							addlocationcmd.Longitude = setUserInputSingleFloatValue(parts, "lng")
+							addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
+							region,err:=Data.GetSlackRegionsById(regionid)
+							if err!= nil {
+
+							} else {
+								if addlocationcmd.Longitude != 0 && addlocationcmd.Latitude != 0 && addlocationcmd.Radius != 0 {
+									filters:=model.Filters{}
+
+									geolation:= model.GeoLocation{Latitude:addlocationcmd.Latitude,
+										Longitude:addlocationcmd.Longitude,Region:&region.RegionName}
+									filters.AddLocation = &model.AddLocation{GeoLocation:geolation,Radius:&addlocationcmd.Radius}
+									byteArray, _ := json.Marshal(userfilters)
+									Data.InsertSlackUserFilter(userid, string(byteArray))
+								}
 							}
 						}
 					}

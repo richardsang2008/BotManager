@@ -73,7 +73,7 @@ type AddGymCmd struct {
 //the follwoing structs are used for db
 type SlackDBMessage struct {
 	gorm.Model
-	RegionId  int
+	RegionId  uint
 	ChannelId string
 	Ts        float64
 }
@@ -87,10 +87,10 @@ type SlackDBUserFilter struct {
 type SlackDBUser struct {
 	gorm.Model
 	Referenceid  string
-	ChannelId    int
-	Fname    string
-	Lname     string
-	Notifyname         string
+	RegionId     uint
+	Fname        string
+	Lname        string
+	Notifyname   string
 	StatusId     int
 	Email        string
 	Phone        string
@@ -98,12 +98,12 @@ type SlackDBUser struct {
 	Isowner      bool
 	Isbot        bool
 	Realname     string
-	AccessRights      string
+	AccessRights string
 }
 type SlackRegion struct {
 	gorm.Model
 	Mode string
-	RegionId int
+	RegionName string
 	MasterslackToken string
 	BotslackToken string
 	Lisaslacktoken string
