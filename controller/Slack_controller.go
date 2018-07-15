@@ -248,11 +248,11 @@ func setUserinputAsRange(parts []string, paramword string) (*model.Range, bool) 
 	return nil, false
 }
 func getUserFiltersByUserId(userId int) (*model.Filters, error) {
-	filterstr, _ := Data.GetSlackUserFilter(userId)
-	if filterstr != nil {
+	filter, _ := Data.GetSlackUserFilter(userId)
+	if (filter != nil ) {
 		//turn that into the object
 		var filters model.Filters
-		err := json.Unmarshal([]byte(filterstr.Filters), &filters)
+		err := json.Unmarshal([]byte(filter.Filters), &filters)
 		if err != nil {
 			utility.MLog.Error(err)
 			return nil, err
@@ -311,7 +311,8 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint) {
 									geolation:= model.GeoLocation{Latitude:addlocationcmd.Latitude,
 										Longitude:addlocationcmd.Longitude,Region:&region.RegionName}
 									filters.AddLocation = &model.AddLocation{GeoLocation:geolation,Radius:&addlocationcmd.Radius}
-									byteArray, _ := json.Marshal(userfilters)
+									//copy filters into db filters
+									byteArray, _ := json.Marshal(filters)
 									Data.InsertSlackUserFilter(userid, string(byteArray))
 								}
 							}
