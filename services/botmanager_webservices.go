@@ -91,7 +91,6 @@ func UpdateAccountBySpecificFields(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"username": account.Username})
 		}
 	}
-
 }
 func ReleaseAccount(c *gin.Context) {
 	utility.MLog.Debug("Services ReleaseAccount starting ")
@@ -133,7 +132,6 @@ func AddAccountWithLevelHandler(maxlevel int) gin.HandlerFunc {
 		now := time.Now()
 		account.LastModified = &now
 		account.Warn = false
-
 		c.BindJSON(&account)
 		//make sure the account does not exit the account
 		accountIDs := locateAccountByIdOrUserName(0, account.Username)
@@ -260,5 +258,4 @@ func GetAccountBySystemIdAndLevelAndMark(c *gin.Context) {
 
 		}
 	}
-
 }

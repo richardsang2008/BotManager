@@ -132,7 +132,7 @@ func main() {
 		if regions.Regions != nil {
 			var geo_Fence = model.GeoFences{}
 			for _, element := range regions.Regions {
-				geo_Fence.Region = element.RegionName
+				//geo_Fence.Region = element.RegionName
 				polygon := []*geo.Point{}
 				for _, zone := range element.Zone {
 					d := geo.NewPoint(zone.Latitude, zone.Longitude)
@@ -223,12 +223,13 @@ func main() {
 			}
 		}
 		messageScanner := bufio.NewScanner(f)
+		regionName:= "mpk_region"
 		for messageScanner.Scan() {
 			messageAline := messageScanner.Text()
 			if !strings.HasPrefix(messageAline, "#") || len(messageAline) == 0 {
 				//add the string into array
 				if len(usersfilterstr) > 0 {
-					controller.FilterPokeMinerInputForAllUsers([]byte(messageAline), usersfilterstr, genfence_zones, pokemonMap, moveMap, teamsMap)
+					controller.FilterPokeMinerInputForAllUsers(regionName,[]byte(messageAline), usersfilterstr, genfence_zones, pokemonMap, moveMap, teamsMap)
 				}
 			}
 		}

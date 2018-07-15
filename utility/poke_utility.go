@@ -131,18 +131,18 @@ func (u *PokeUtility) BackFillIdForFilters(filters *model.Filters, pokemonMap ma
 	}
 	return filters
 }
-func (u *PokeUtility) whichRegion(regions []model.GeoFences, lat float64, lng float64) *string {
+func (u *PokeUtility) whichRegion(regionname string,regions []model.GeoFences, lat float64, lng float64) *string {
 	ret := ""
 	for _, element := range regions {
 		//calculate the zone
 		if element.Geofence.Inside(geo.NewPoint(lat, lng)) {
-			ret = element.Region
+			ret = regionname
 			return &ret
 		}
 	}
 	return nil
 }
-func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences, isTest bool) (interface{}, *bool, *string, error) {
+func (u *PokeUtility) ParsePokeMinerInput(regionname string, data []byte, regions []model.GeoFences, isTest bool) (interface{}, *bool, *string, error) {
 	//data is the json in byte array
 	var ret interface{}
 	//var region *string
@@ -168,7 +168,7 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 				isWithinTime = true
 			}
 			//find out which region
-			regionstr = u.whichRegion(regions, pokemessage.Message.Latitude, pokemessage.Message.Longitude)
+			regionstr = u.whichRegion(regionname, regions, pokemessage.Message.Latitude, pokemessage.Message.Longitude)
 
 			pokemessage.Message.Region = regionstr
 			ret = pokemessage
@@ -181,7 +181,7 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 				isWithinTime = true
 			}
 			//find out which region
-			regionstr = u.whichRegion(regions, raidmessage.Message.Latitude, raidmessage.Message.Longitude)
+			regionstr = u.whichRegion(regionname, regions, raidmessage.Message.Latitude, raidmessage.Message.Longitude)
 			raidmessage.Message.Region = regionstr
 			ret = raidmessage
 		case "gym":
@@ -189,7 +189,7 @@ func (u *PokeUtility) ParsePokeMinerInput(data []byte, regions []model.GeoFences
 				MLog.Error(err)
 			}
 			//find out which region
-			regionstr = u.whichRegion(regions, gymmessage.Message.Latitude, gymmessage.Message.Longitude)
+			regionstr = u.whichRegion(regionname, regions, gymmessage.Message.Latitude, gymmessage.Message.Longitude)
 			gymmessage.Message.Region = regionstr
 			ret = gymmessage
 		default:

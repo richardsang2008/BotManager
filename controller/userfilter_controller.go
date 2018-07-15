@@ -7,10 +7,10 @@ import (
 	"fmt"
 )
 
-func FilterPokeMinerInputForAllUsers(data []byte, usersfilters []string, genfence_zones []model.GeoFences, pokemonMap map[int]string, moveMap map[int]string, teamsMap map[int]string) {
+func FilterPokeMinerInputForAllUsers(regionName string, data []byte, usersfilters []string, genfence_zones []model.GeoFences, pokemonMap map[int]string, moveMap map[int]string, teamsMap map[int]string) {
 	u := utility.PokeUtility{}
 	//input pokeminer message
-	inputData, isWithinTime, regionstr, err := u.ParsePokeMinerInput(data, genfence_zones, true)
+	inputData, isWithinTime, regionstr, err := u.ParsePokeMinerInput(regionName,data, genfence_zones, true)
 	if regionstr == nil || *regionstr == ""{
 		utility.MLog.Debug("RegionName can not be determined or not within the region so no filter")
 		return
@@ -24,7 +24,6 @@ func FilterPokeMinerInputForAllUsers(data []byte, usersfilters []string, genfenc
 	}
 	for _, userfiltersline := range usersfilters {
 		go tryHandleMsgAndFilters(inputData, userfiltersline, regionstr, pokemonMap, moveMap, teamsMap)
-
 	}
 }
 
@@ -41,13 +40,12 @@ func tryHandleMsgAndFilters(inputData interface{}, userfiltersline string, regio
 	if filters.UserRegion.Region == *(regionstr) {
 		isOkToNotify := u.ApplyFiltersToMessage(inputData, filters)
 		if isOkToNotify {
-			msg := fmt.Sprintf("Sending message %s  to user %s", inputData, filters.UserRegion.UserId)
+			msg := fmt.Sprintf("Sending message %s  to user ", inputData)
 			utility.MLog.Debug(msg)
 		} else {
-			msg := fmt.Sprintf("No message to user %s", filters.UserRegion.UserId)
+			msg := fmt.Sprintf("No message to user ", )
 			utility.MLog.Debug(msg)
 		}
-
 	} else {
 		utility.MLog.Debug("RegionName not match so no data will be sent")
 	}

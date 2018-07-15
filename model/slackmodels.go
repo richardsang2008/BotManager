@@ -8,8 +8,6 @@ type BotMessage struct {
 	ChannelID string
 }
 
-
-
 type SlackUser struct {
 	ID           string
 	ChannelID    int
@@ -29,7 +27,7 @@ type SlackUser struct {
 	IsOwner      bool
 	IsBot        bool
 	AccessRights Rights
-	DBId uint
+	DBId         uint
 }
 type AddLocationCmd struct {
 	Latitude  float64
@@ -70,6 +68,7 @@ type AddGymCmd struct {
 	Team    string
 	GymName string
 }
+
 //the follwoing structs are used for db
 type SlackDBMessage struct {
 	gorm.Model
@@ -81,7 +80,7 @@ type SlackDBMessage struct {
 type SlackDBUserFilter struct {
 	gorm.Model
 	UserId  uint
-	Filters string
+	Filters string `sql:"type:text;"`
 }
 
 type SlackDBUser struct {
@@ -102,9 +101,9 @@ type SlackDBUser struct {
 }
 type SlackRegion struct {
 	gorm.Model
-	Mode string
-	RegionName string
+	Mode             string
+	RegionName       string
 	MasterslackToken string
-	BotslackToken string
-	Lisaslacktoken string
+	BotslackToken    string
+	Lisaslacktoken   string
 }

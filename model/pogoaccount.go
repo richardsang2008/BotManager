@@ -225,7 +225,7 @@ type AddNotifyGym struct {
 	GymName *string `json:"gym_name"` //string
 }
 type UserRegion struct {
-	UserId string `json:"UserId"`
+	//UserId string `json:"UserId"`
 	Region string `json:"Region"`
 }
 type Region struct {
@@ -245,6 +245,6 @@ type Filters struct {
 	AddNotifyGym  *AddNotifyGym  `json:"AddNotifyGym"`  //AddNotifyGym
 }
 type GeoFences struct {
-	Region   string
+	//Region   string
 	Geofence *geofence.Geofence
 }

@@ -9,7 +9,6 @@ import (
 var (
 	Data data.DataAccessLay
 )
-
 func AddAccount(account model.PogoAccount) (*string, error) {
 	utility.MLog.Debug("Controller AddAccount starting")
 	newid, err := Data.AddAccount(account)
