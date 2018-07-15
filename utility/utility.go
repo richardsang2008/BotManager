@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -127,4 +128,13 @@ func (u *Utility) ToMap(data []byte) (map[string]interface{}, error) {
 	var datamap map[string]interface{}
 	err := json.Unmarshal(data, &datamap)
 	return datamap, err
+}
+//lookup a value in the map[int]string
+func (u *Utility) GetIntFromMap(value string, maps map[int]string) int{
+	for k,v :=range maps {
+		if strings.EqualFold(v,value) {
+			return k
+		}
+	}
+	return -1
 }

@@ -259,7 +259,7 @@ func main() {
 		msgChannel:="slack_messages_channel"
 		msgTopic :="slack_poke_messages"
 
-		slackcontroller.SlackSelfHost(env,slackLisaslacktoken,slackMasterslackToken,slackBotslackToken,messageQueueProduceraddress,messageQueueConsumerlookupaddress,msgTopic,msgChannel,wg)
+		slackcontroller.SlackSelfHost(env,slackLisaslacktoken,slackMasterslackToken,slackBotslackToken,messageQueueProduceraddress,messageQueueConsumerlookupaddress,msgTopic,msgChannel,pokemonMap,moveMap,wg)
 
 		//webhosting
 		/*

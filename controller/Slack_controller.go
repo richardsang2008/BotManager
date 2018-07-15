@@ -26,11 +26,10 @@ type SlackController struct {
 	NSQController NSQController
 }
 
-func (c *SlackController) SlackSelfHost(env string,lisaslacktoken string, masterslackToken string, botslackToken string, produceraddress string, consumeraddress string, topic string, channel string, wg *sync.WaitGroup) {
+func (c *SlackController) SlackSelfHost(env string,lisaslacktoken string, masterslackToken string, botslackToken string, produceraddress string, consumeraddress string, topic string, channel string, monMap map[int]string, moveMap map[int]string, wg *sync.WaitGroup) {
 	wg.Add(1)
 	//default to one mpk_region
 	slackregion,_:=Data.GetSlackRegionsByModeAndRegionName(env,"mpk_region")
-
 	lisaslacktoken =slackregion.Lisaslacktoken
 	masterslackToken= slackregion.MasterslackToken
 	botslackToken = slackregion.MasterslackToken
@@ -51,19 +50,19 @@ Loop:
 			case *slack.ConnectedEvent:
 				//IMMarketedEvent, GroupMarkedEvent, ChannelMarkedEvent, MessageEvent needs to be tracked so they can be deleted later
 			case *slack.IMMarkedEvent:
-				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: slackregion.ID, ChannelId: ev.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
 			case *slack.GroupMarkedEvent:
-				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: slackregion.ID, ChannelId: ev.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
 			case *slack.ChannelMarkedEvent:
-				slackMessage := model.SlackDBMessage{RegionId: 1, ChannelId: ev.Channel}
+				slackMessage := model.SlackDBMessage{RegionId: slackregion.ID, ChannelId: ev.Channel}
 				tsfloat, _ := strconv.ParseFloat(ev.Timestamp, 64)
 				slackMessage.Ts = tsfloat
 				byteArray, _ := json.Marshal(slackMessage)
@@ -78,7 +77,6 @@ Loop:
 				byteArray, _ := json.Marshal(slackMessage)
 				//byteArray, _:= json.Marshal(ev.Msg)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
-
 				slackUser, err := getUserInfo(ev.User, c.Lisaapi,slackregion.ID)
 				//this is the user information
 				if err != nil {
@@ -90,7 +88,7 @@ Loop:
 				//if the message is not starting with ! then nothing
 				if strings.HasPrefix(ev.Msg.Text, "!") {
 					utility.MLog.Info("I need to do something to make this done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
-					ParseSlackUserInput(slackUser.DBId,ev.Msg.Text,slackregion.ID)
+					ParseSlackUserInput(slackUser.DBId,ev.Msg.Text,slackregion.ID,monMap,moveMap)
 				}
 				if doesNeedingHandleMessage(ev) {
 					subType := ev.Msg.SubType
@@ -264,7 +262,15 @@ func getUserFiltersByUserId(userId uint) (*model.Filters, error) {
 	}
 	return nil, nil
 }
-func ParseSlackUserInput(userid uint,userInput string, regionid uint) {
+func findMonWthin(addNotify []model.AddNotify, monname string) int {
+	for index, value :=range(addNotify){
+		if strings.EqualFold(value.Mon.Name, monname){
+			return index
+		}
+	}
+	return -1
+}
+func ParseSlackUserInput(userid uint,userInput string, regionid uint, monMap map[int]string, moveMap map[int]string) {
 	//parse the userinput by delimiter white space
 	if strings.HasPrefix(userInput, "!") {
 		parts := strings.Split(userInput, " ")
@@ -299,9 +305,6 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint) {
 								userfilters.AddLocation=&model.AddLocation{Radius:&(addlocationcmd.Radius),
 								GeoLocation:model.GeoLocation{Region:&region.RegionName,
 									Longitude:addlocationcmd.Longitude, Latitude:addlocationcmd.Latitude}}
-								//userfilters.AddLocation.Radius = &(addlocationcmd.Radius)
-								//userfilters.AddLocation.Longitude = addlocationcmd.Longitude
-								//userfilters.AddLocation.Latitude = addlocationcmd.Latitude
 								//save to db
 								byteArray, _ := json.Marshal(userfilters)
 								Data.InsertSlackUserFilter(userid, string(byteArray))
@@ -333,7 +336,6 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint) {
 						ivranged, _ := setUserinputAsRange(parts, "iv")
 						if userfilters != nil {
 							//userfilter doe exit
-
 							userfilters.AddNotifyAll = &model.AddNotifyAll{Level:lvlranged,Iv:ivranged}
 							//save to db
 							byteArray, _ := json.Marshal(userfilters)
@@ -341,7 +343,7 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint) {
 						} else {
 							//userfilter does exit
 							filters.AddNotifyAll= &model.AddNotifyAll{Level:lvlranged,Iv:ivranged}
-								//save to db
+							//save to db
 							byteArray,_:=json.Marshal(filters)
 							Data.InsertSlackUserFilter(userid,string(byteArray))
 						}
@@ -351,39 +353,41 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint) {
 				if isUserInGoodStatus {
 					userfilters, err := getUserFiltersByUserId(userid)
 					if err != nil {
-
-					} else{
+						utility.MLog.Error(err)
+					} else {
 						namestr := setUserInputSingleStringValue(parts, "name")
 						lvlranged, _ := setUserinputAsRange(parts, "lvl")
 						ivranged, _ := setUserinputAsRange(parts, "iv")
 						cpranged, _ := setUserinputAsRange(parts, "cp")
-						if namestr != nil {
-							//check to see if the name is in the filters already
-loop:
-							for index, value :=range(userfilters.AddNotifies){
-								if strings.EqualFold(value.Mon.Name,*namestr){
-									if ivranged != nil{
-										userfilters.AddNotifies[index].Iv = ivranged
-									}
-									if lvlranged !=nil {
-										userfilters.AddNotifies[index].Level = lvlranged
-									}
-									if cpranged !=nil {
-										userfilters.AddNotifies[index].Cp = cpranged
-									}
-									break loop
+						monid:=utility.MUtility.GetIntFromMap(*namestr,monMap)
+						if userfilters != nil {
+							//userfilter does exist
+							mon :=model.NameAndID{Name:*namestr,Id:monid}
+							oneAddNotify:= model.AddNotify{Iv:ivranged,Level:lvlranged,Cp:cpranged,Mon:&mon}
+							if (userfilters.AddNotifies != nil ){
+								if (len(userfilters.AddNotifies) ==0) {
+									//no addnotify add the one record
+									userfilters.AddNotifies = []model.AddNotify{}
+									userfilters.AddNotifies = append(userfilters.AddNotifies,oneAddNotify)
+									} else {
+										//locate the mon if there is one
+										index :=findMonWthin(userfilters.AddNotifies,*namestr)
+										if index >-1 {
+											userfilters.AddNotifies[index].Iv = ivranged
+											userfilters.AddNotifies[index].Level = lvlranged
+											userfilters.AddNotifies[index].Cp = cpranged
+										} else {
+											userfilters.AddNotifies = append(userfilters.AddNotifies,oneAddNotify)
+										}
 								}
+							} else {
+								userfilters.AddNotifies = []model.AddNotify{}
+								userfilters.AddNotifies = append(userfilters.AddNotifies,oneAddNotify)
 							}
-							//didn't find anything then
-							//append a new record to the end of the existing
-							id :=123
-							mon :=model.NameAndID{Name:*namestr,Id:id}
-							newone:=model.AddNotify{Level:lvlranged,Iv:ivranged,Cp:cpranged, Mon:&mon}
-							userfilters.AddNotifies=append(userfilters.AddNotifies,newone)
-							//save to db
-							byteArray, _ := json.Marshal(userfilters)
-							Data.InsertSlackUserFilter(regionid, string(byteArray))
 						}
+						//save to db
+						byteArray, _ := json.Marshal(userfilters)
+						Data.InsertSlackUserFilter(regionid, string(byteArray))
 					}
 				}
 			case "!addallraid":
