@@ -23,9 +23,9 @@
     },
     "slack": {
       "slackApi": {
-        "masterslackToken": "xoxp-79649268789-79642431094-195520255857-18dd772f6cc67ed6e7e922e4efd02303",
-        "botslackToken": "xoxb-79835729619-GSS3wTWee47CoFg0vmcZvj1g",
-        "lisaslacktoken":"xoxb-196892958678-tPXzkH65m491KglBoJLyZc4r"
+        "masterslackToken": "xoxp-xxxxxxxxxxxxxxxxxxx",
+        "botslackToken": "xoxb-xxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "lisaslacktoken":"xoxb-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
       },
       "admin": [
         "",

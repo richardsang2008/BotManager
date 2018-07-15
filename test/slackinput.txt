@@ -1,5 +1,7 @@
 !addlocation lan 34.999999 lng -112.223444 radius 8.1
 !addallmons lvl 30+ iv 2000+
 !addmon name snorlax lvl 28+ iv 35+ cp 2500+
+!addmon name Nidoqueen lvl 29+
+!addallraid lvl 4+
 !showmons
 !showlocation

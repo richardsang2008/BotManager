@@ -391,21 +391,26 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint, monMap map
 					}
 				}
 			case "!addallraid":
-				cmd := model.AddAllRaidCmd{}
-				lvlranged, _ := setUserinputAsRange(parts, "lvl")
-				cmd.Lvl = lvlranged
-				sponsorValue := setUserInputSingleBoolValue(parts, "sponsored")
-				cmd.Sponsored = sponsorValue
-				boostedValue := setUserInputSingleBoolValue(parts, "boosted")
-				cmd.Boosted = boostedValue
-				teamNamestr := setUserInputSingleStringValue(parts, "team")
-				if teamNamestr != nil {
-					cmd.Team = *teamNamestr
+				userfilters,err:=getUserFiltersByUserId(userid)
+				if err !=nil{
+					utility.MLog.Error(err)
+				} else {
+					lvlranged, _ := setUserinputAsRange(parts, "lvl")
+					sponsorValue := setUserInputSingleBoolValue(parts, "sponsored")
+					teamNamestr := setUserInputSingleStringValue(parts, "team")
+					gymNamestr := setUserInputSingleStringValue(parts, "gym")
+					eggOrRaid:=model.EggOrRaid{}
+					if teamNamestr != nil {
+						teamNameAndId:=model.NameAndID{Name:*teamNamestr,Id:1}
+						eggOrRaid=model.EggOrRaid{GymName:gymNamestr,Team:&teamNameAndId,Level:lvlranged,Sponsor:&sponsorValue}
+					}
+					eggOrRaid=model.EggOrRaid{GymName:gymNamestr, Level:lvlranged, Sponsor:&sponsorValue}
+					//userfilter does exist
+					userfilters.AddNotifyRaid = &model.AddNotifyRaid{EggOrRaid:eggOrRaid}
 				}
-				gymNamestr := setUserInputSingleStringValue(parts, "gym")
-				if gymNamestr != nil {
-					cmd.GymName = *gymNamestr
-				}
+				//save to db
+				byteArray, _ := json.Marshal(userfilters)
+				Data.InsertSlackUserFilter(regionid, string(byteArray))
 			case "!addraid":
 				cmd := model.AddRaidCmd{}
 				lvlranged, _ := setUserinputAsRange(parts, "lvl")
