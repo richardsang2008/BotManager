@@ -396,15 +396,26 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint, monMap map
 					utility.MLog.Error(err)
 				} else {
 					lvlranged, _ := setUserinputAsRange(parts, "lvl")
-					sponsorValue := setUserInputSingleBoolValue(parts, "sponsored")
+					namestr:=setUserInputSingleStringValue(parts,"name")
+					monmovefilter := model.MonMovesFilter{}
+					if namestr!=nil {
+						monid:=utility.MUtility.GetIntFromMap(*namestr,monMap)
+						if monid >0 {
+							monmovefilter.Mon = &model.NameAndID{}
+							monmovefilter.Mon.Id = monid
+							monmovefilter.Mon.Name = *namestr
+							userfilters.AddNotifyRaid.MonMovesFilters = []model.MonMovesFilter{}
+							userfilters.AddNotifyRaid.MonMovesFilters = append(userfilters.AddNotifyRaid.MonMovesFilters,monmovefilter)
+						}
+					}
 					teamNamestr := setUserInputSingleStringValue(parts, "team")
 					gymNamestr := setUserInputSingleStringValue(parts, "gym")
 					eggOrRaid:=model.EggOrRaid{}
 					if teamNamestr != nil {
 						teamNameAndId:=model.NameAndID{Name:*teamNamestr,Id:1}
-						eggOrRaid=model.EggOrRaid{GymName:gymNamestr,Team:&teamNameAndId,Level:lvlranged,Sponsor:&sponsorValue}
+						eggOrRaid=model.EggOrRaid{GymName:gymNamestr,Team:&teamNameAndId,Level:lvlranged}
 					}
-					eggOrRaid=model.EggOrRaid{GymName:gymNamestr, Level:lvlranged, Sponsor:&sponsorValue}
+					eggOrRaid=model.EggOrRaid{GymName:gymNamestr, Level:lvlranged}
 					//userfilter does exist
 					userfilters.AddNotifyRaid = &model.AddNotifyRaid{EggOrRaid:eggOrRaid}
 				}

@@ -3,5 +3,6 @@
 !addmon name snorlax lvl 28+ iv 35+ cp 2500+
 !addmon name Nidoqueen lvl 29+
 !addallraid lvl 4+
+!addallraid lvl 4+ name snorlax
 !showmons
 !showlocation
