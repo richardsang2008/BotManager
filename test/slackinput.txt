@@ -2,7 +2,7 @@
 !addallmons lvl 30+ iv 2000+
 !addmon name snorlax lvl 28+ iv 35+ cp 2500+
 !addmon name Nidoqueen lvl 29+
-!addallraid lvl 4+
-!addallraid lvl 4+ name snorlax
+!addallraid lvl 4+ gymname 'starbucks'
+!addraid name snorlax
 !showmons
 !showlocation

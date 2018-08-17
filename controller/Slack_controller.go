@@ -2,15 +2,15 @@ package controller
 
 import (
 	"encoding/json"
+	"github.com/mattn/go-shellwords"
 	"github.com/nlopes/slack"
 	"github.com/richardsang2008/BotManager/model"
 	"github.com/richardsang2008/BotManager/utility"
 	"strconv"
 	"strings"
 	"sync"
-	"math"
 )
-const MaxFloat= math.MaxFloat64
+
 func doesNeedingHandleMessage(ev *slack.MessageEvent) bool {
 	if ev.SubType != "" {
 		return false
@@ -18,6 +18,7 @@ func doesNeedingHandleMessage(ev *slack.MessageEvent) bool {
 	return true
 	//return ev.BotID == "" && ev.SubType != "message_deleted" && ev.SubMessage == nil && ev.Hidden == false && ev.ThreadTimestamp == "" && ev.Msg.ItemType == "" && !strings.HasPrefix(ev.Msg.Text, "<")
 }
+
 type SlackController struct {
 	Lisaapi       *slack.Client
 	Masterapi     *slack.Client
@@ -26,12 +27,12 @@ type SlackController struct {
 	NSQController NSQController
 }
 
-func (c *SlackController) SlackSelfHost(env string,lisaslacktoken string, masterslackToken string, botslackToken string, produceraddress string, consumeraddress string, topic string, channel string, monMap map[int]string, moveMap map[int]string, wg *sync.WaitGroup) {
+func (c *SlackController) SlackSelfHost(env string, lisaslacktoken string, masterslackToken string, botslackToken string, produceraddress string, consumeraddress string, topic string, channel string, monMap map[int]string, moveMap map[int]string, wg *sync.WaitGroup) {
 	wg.Add(1)
 	//default to one mpk_region
-	slackregion,_:=Data.GetSlackRegionsByModeAndRegionName(env,"mpk_region")
-	lisaslacktoken =slackregion.Lisaslacktoken
-	masterslackToken= slackregion.MasterslackToken
+	slackregion, _ := Data.GetSlackRegionsByModeAndRegionName(env, "mpk_region")
+	lisaslacktoken = slackregion.Lisaslacktoken
+	masterslackToken = slackregion.MasterslackToken
 	botslackToken = slackregion.MasterslackToken
 	c.Lisaapi = slack.New(lisaslacktoken)
 	c.Masterapi = slack.New(masterslackToken)
@@ -77,7 +78,7 @@ Loop:
 				byteArray, _ := json.Marshal(slackMessage)
 				//byteArray, _:= json.Marshal(ev.Msg)
 				c.NSQController.ProducerPublishMessage(byteArray, topic)
-				slackUser, err := getUserInfo(ev.User, c.Lisaapi,slackregion.ID)
+				slackUser, err := getUserInfo(ev.User, c.Lisaapi, slackregion.ID)
 				//this is the user information
 				if err != nil {
 					utility.MLog.Error(err)
@@ -88,7 +89,7 @@ Loop:
 				//if the message is not starting with ! then nothing
 				if strings.HasPrefix(ev.Msg.Text, "!") {
 					utility.MLog.Info("I need to do something to make this done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
-					ParseSlackUserInput(slackUser.DBId,ev.Msg.Text,slackregion.ID,monMap,moveMap)
+					ParseSlackUserInput(slackUser.DBId, ev.Msg.Text, slackregion.ID, monMap)
 				}
 				if doesNeedingHandleMessage(ev) {
 					subType := ev.Msg.SubType
@@ -119,41 +120,41 @@ Loop:
 	}
 	wg.Wait()
 }
-func getUserInfo(userid string, api *slack.Client, regionId uint) (*model.SlackUser, error){
-	c:=utility.SlackUtility{}
-	user,err := c.GetUserInfo(userid,api)
+func getUserInfo(userid string, api *slack.Client, regionId uint) (*model.SlackUser, error) {
+	c := utility.SlackUtility{}
+	user, err := c.GetUserInfo(userid, api)
 	if err != nil {
 		utility.MLog.Error(err)
 		return nil, err
-	}else {
+	} else {
 		//check user in db
-		dbuser,err:= Data.GetSlackDBUserByEmail(user.Email,regionId)
-		if err!=nil {
+		dbuser, err := Data.GetSlackDBUserByEmail(user.Email, regionId)
+		if err != nil {
 			utility.MLog.Error(err)
-			return nil,err
-		} else{
-			if dbuser!= nil {
+			return nil, err
+		} else {
+			if dbuser != nil {
 				//populate the db stuff
 				if !strings.EqualFold(dbuser.Notifyname, user.DisplayName) {
-					id,err:=Data.AddSlackDBUser(user, regionId)
-					if err!=nil {
+					id, err := Data.AddSlackDBUser(user, regionId)
+					if err != nil {
 						utility.MLog.Error(err)
 						return nil, err
 					}
-					dbuser.ID =id
+					dbuser.ID = id
 				}
 				user.DBId = dbuser.ID
-				return user,nil
+				return user, nil
 			} else {
 				//add user into db
-				id,err:=Data.AddSlackDBUser(user,regionId)
-				if err!=nil {
+				id, err := Data.AddSlackDBUser(user, regionId)
+				if err != nil {
 					utility.MLog.Error(err)
 					return nil, err
 				}
 				user.AccessRights = model.RightsUSER
-				user.DBId =id
-				return user,nil
+				user.DBId = id
+				return user, nil
 			}
 		}
 	}
@@ -213,8 +214,8 @@ func setUserinputAsRange(parts []string, paramword string) (*model.Range, bool) 
 		if strings.HasSuffix(value, "+") {
 			//get the value before the +
 			charArray := []rune(value)
-			len := len(charArray)
-			subvalue := string(charArray[0 : len-1])
+			arraylen := len(charArray)
+			subvalue := string(charArray[0 : arraylen-1])
 			rangeValue.Min, err1 = strconv.ParseFloat(subvalue, 64)
 			if err1 != nil {
 				utility.MLog.Error(err1)
@@ -225,8 +226,8 @@ func setUserinputAsRange(parts []string, paramword string) (*model.Range, bool) 
 			rangeValue.Max = 200000
 		} else if strings.HasSuffix(value, "-") {
 			charArray := []rune(value)
-			len := len(charArray)
-			subvalue := string(charArray[0 : len-1])
+			arraylen := len(charArray)
+			subvalue := string(charArray[0 : arraylen-1])
 			rangeValue.Max, err1 = strconv.ParseFloat(subvalue, 64)
 			if err1 != nil {
 				utility.MLog.Error(err1)
@@ -249,7 +250,7 @@ func setUserinputAsRange(parts []string, paramword string) (*model.Range, bool) 
 }
 func getUserFiltersByUserId(userId uint) (*model.Filters, error) {
 	filter, _ := Data.GetSlackUserFilter(userId)
-	if (filter != nil ) {
+	if filter != nil {
 		//turn that into the object
 		var filters model.Filters
 		err := json.Unmarshal([]byte(filter.Filters), &filters)
@@ -263,185 +264,159 @@ func getUserFiltersByUserId(userId uint) (*model.Filters, error) {
 	return nil, nil
 }
 func findMonWthin(addNotify []model.AddNotify, monname string) int {
-	for index, value :=range(addNotify){
-		if strings.EqualFold(value.Mon.Name, monname){
+	for index, value := range addNotify {
+		if strings.EqualFold(value.Mon.Name, monname) {
 			return index
 		}
 	}
 	return -1
 }
-func ParseSlackUserInput(userid uint,userInput string, regionid uint, monMap map[int]string, moveMap map[int]string) {
+func ParseSlackUserInput(userid uint, userInput string, regionid uint, monMap map[int]string) {
 	//parse the userinput by delimiter white space
 	if strings.HasPrefix(userInput, "!") {
-		parts := strings.Split(userInput, " ")
+		parts, _ := shellwords.Parse(userInput)
 		//if the parts is more than 1, check what is it start with
 		if len(parts) > 0 {
-			//check the first part, and see what it is
-			isUserInGoodStatus := true
-			region,err:=Data.GetSlackRegionsById(regionid)
+			region, err := Data.GetSlackRegionsById(regionid)
 			if err != nil {
 				utility.MLog.Error(err)
 			}
-			_region :=model.UserRegion{Region:region.RegionName}
-			filters:=model.Filters{UserRegion:&_region}
+			_region := model.UserRegion{Region: region.RegionName}
+			filters := model.Filters{UserRegion: &_region}
 			switch a := strings.ToLower(parts[0]); a {
 			case "!addlocation":
 				//make sure the user is in subscription status, balance is greater than 0
-				if isUserInGoodStatus {
-					userfilters, err := getUserFiltersByUserId(userid)
-					if err != nil {
-						utility.MLog.Error(err)
+				userfilters, e := getUserFiltersByUserId(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					if userfilters != nil {
+						//userfilter does  exit
+						addlocationcmd := model.AddLocationCmd{}
+						addlocationcmd.Latitude = setUserInputSingleFloatValue(parts, "lan")
+						addlocationcmd.Longitude = setUserInputSingleFloatValue(parts, "lng")
+						addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
+						if addlocationcmd.Longitude != 0 && addlocationcmd.Latitude != 0 && addlocationcmd.Radius != 0 {
+							//addlocation is successful then further handle is required
+							//check db to see if user already has the location alter, if not add it else update it
+							//load the user filter from db
+							userfilters.AddLocation = &model.AddLocation{Radius: &(addlocationcmd.Radius),
+								GeoLocation: model.GeoLocation{Region: &region.RegionName,
+									Longitude: addlocationcmd.Longitude, Latitude: addlocationcmd.Latitude}}
+							//save to db
+							byteArray, _ := json.Marshal(userfilters)
+							Data.InsertSlackUserFilter(userid, string(byteArray))
+						}
 					} else {
-						if userfilters != nil {
-							//userfilter does  exit
-							addlocationcmd := model.AddLocationCmd{}
-							addlocationcmd.Latitude = setUserInputSingleFloatValue(parts, "lan")
-							addlocationcmd.Longitude = setUserInputSingleFloatValue(parts, "lng")
-							addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
-							if addlocationcmd.Longitude != 0 && addlocationcmd.Latitude != 0 && addlocationcmd.Radius != 0 {
-								//addlocation is successful then further handle is required
-								//check db to see if user already has the location alter, if not add it else update it
-								//load the user filter from db
-								userfilters.AddLocation=&model.AddLocation{Radius:&(addlocationcmd.Radius),
-								GeoLocation:model.GeoLocation{Region:&region.RegionName,
-									Longitude:addlocationcmd.Longitude, Latitude:addlocationcmd.Latitude}}
-								//save to db
-								byteArray, _ := json.Marshal(userfilters)
-								Data.InsertSlackUserFilter(userid, string(byteArray))
-							}
-						} else {
-							//userfilter does  exit
-							addlocationcmd := model.AddLocationCmd{}
-							addlocationcmd.Latitude = setUserInputSingleFloatValue(parts, "lan")
-							addlocationcmd.Longitude = setUserInputSingleFloatValue(parts, "lng")
-							addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
-							if addlocationcmd.Longitude != 0 && addlocationcmd.Latitude != 0 && addlocationcmd.Radius != 0 {
-								geolation:= model.GeoLocation{Latitude:addlocationcmd.Latitude,
-									Longitude:addlocationcmd.Longitude,Region:&region.RegionName}
-								filters.AddLocation = &model.AddLocation{GeoLocation:geolation,Radius:&addlocationcmd.Radius}
-								//copy filters into db filters
-								byteArray, _ := json.Marshal(filters)
-								Data.InsertSlackUserFilter(userid, string(byteArray))
-							}
+						//userfilter does  exit
+						addlocationcmd := model.AddLocationCmd{}
+						addlocationcmd.Latitude = setUserInputSingleFloatValue(parts, "lan")
+						addlocationcmd.Longitude = setUserInputSingleFloatValue(parts, "lng")
+						addlocationcmd.Radius = setUserInputSingleFloatValue(parts, "radius")
+						if addlocationcmd.Longitude != 0 && addlocationcmd.Latitude != 0 && addlocationcmd.Radius != 0 {
+							geolation := model.GeoLocation{Latitude: addlocationcmd.Latitude,
+								Longitude: addlocationcmd.Longitude, Region: &region.RegionName}
+							filters.AddLocation = &model.AddLocation{GeoLocation: geolation, Radius: &addlocationcmd.Radius}
+							//copy filters into db filters
+							byteArray, _ := json.Marshal(filters)
+							Data.InsertSlackUserFilter(userid, string(byteArray))
 						}
 					}
 				}
 			case "!addallmons":
-				if isUserInGoodStatus {
-					userfilters, err := getUserFiltersByUserId(userid)
-					if err != nil {
-						utility.MLog.Error(err)
-					} else{
-						lvlranged, _ := setUserinputAsRange(parts, "lvl")
-						ivranged, _ := setUserinputAsRange(parts, "iv")
-						if userfilters != nil {
-							//userfilter doe exit
-							userfilters.AddNotifyAll = &model.AddNotifyAll{Level:lvlranged,Iv:ivranged}
-							//save to db
-							byteArray, _ := json.Marshal(userfilters)
-							Data.InsertSlackUserFilter(userid, string(byteArray))
-						} else {
-							//userfilter does exit
-							filters.AddNotifyAll= &model.AddNotifyAll{Level:lvlranged,Iv:ivranged}
-							//save to db
-							byteArray,_:=json.Marshal(filters)
-							Data.InsertSlackUserFilter(userid,string(byteArray))
-						}
+				userfilters, e := getUserFiltersByUserId(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					lvlranged, _ := setUserinputAsRange(parts, "lvl")
+					ivranged, _ := setUserinputAsRange(parts, "iv")
+					if userfilters != nil {
+						//userfilter doe exit
+						userfilters.AddNotifyAll = &model.AddNotifyAll{Level: lvlranged, Iv: ivranged}
+						//save to db
+						byteArray, _ := json.Marshal(userfilters)
+						Data.InsertSlackUserFilter(userid, string(byteArray))
+					} else {
+						//userfilter does exit
+						filters.AddNotifyAll = &model.AddNotifyAll{Level: lvlranged, Iv: ivranged}
+						//save to db
+						byteArray, _ := json.Marshal(filters)
+						Data.InsertSlackUserFilter(userid, string(byteArray))
 					}
 				}
 			case "!addmon":
-				if isUserInGoodStatus {
-					userfilters, err := getUserFiltersByUserId(userid)
-					if err != nil {
-						utility.MLog.Error(err)
-					} else {
-						namestr := setUserInputSingleStringValue(parts, "name")
-						lvlranged, _ := setUserinputAsRange(parts, "lvl")
-						ivranged, _ := setUserinputAsRange(parts, "iv")
-						cpranged, _ := setUserinputAsRange(parts, "cp")
-						monid:=utility.MUtility.GetIntFromMap(*namestr,monMap)
-						if userfilters != nil {
-							//userfilter does exist
-							mon :=model.NameAndID{Name:*namestr,Id:monid}
-							oneAddNotify:= model.AddNotify{Iv:ivranged,Level:lvlranged,Cp:cpranged,Mon:&mon}
-							if (userfilters.AddNotifies != nil ){
-								if (len(userfilters.AddNotifies) ==0) {
-									//no addnotify add the one record
-									userfilters.AddNotifies = []model.AddNotify{}
-									userfilters.AddNotifies = append(userfilters.AddNotifies,oneAddNotify)
-									} else {
-										//locate the mon if there is one
-										index :=findMonWthin(userfilters.AddNotifies,*namestr)
-										if index >-1 {
-											userfilters.AddNotifies[index].Iv = ivranged
-											userfilters.AddNotifies[index].Level = lvlranged
-											userfilters.AddNotifies[index].Cp = cpranged
-										} else {
-											userfilters.AddNotifies = append(userfilters.AddNotifies,oneAddNotify)
-										}
-								}
-							} else {
+				userfilters, e := getUserFiltersByUserId(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					namestr := setUserInputSingleStringValue(parts, "name")
+					lvlranged, _ := setUserinputAsRange(parts, "lvl")
+					ivranged, _ := setUserinputAsRange(parts, "iv")
+					cpranged, _ := setUserinputAsRange(parts, "cp")
+					monid := utility.MUtility.GetIntFromMap(*namestr, monMap)
+					if userfilters != nil {
+						//userfilter does exist
+						mon := model.NameAndID{Name: *namestr, Id: monid}
+						oneAddNotify := model.AddNotify{Iv: ivranged, Level: lvlranged, Cp: cpranged, Mon: &mon}
+						if userfilters.AddNotifies != nil {
+							if len(userfilters.AddNotifies) == 0 {
+								//no addnotify add the one record
 								userfilters.AddNotifies = []model.AddNotify{}
-								userfilters.AddNotifies = append(userfilters.AddNotifies,oneAddNotify)
+								userfilters.AddNotifies = append(userfilters.AddNotifies, oneAddNotify)
+							} else {
+								//locate the mon if there is one
+								index := findMonWthin(userfilters.AddNotifies, *namestr)
+								if index > -1 {
+									userfilters.AddNotifies[index].Iv = ivranged
+									userfilters.AddNotifies[index].Level = lvlranged
+									userfilters.AddNotifies[index].Cp = cpranged
+								} else {
+									userfilters.AddNotifies = append(userfilters.AddNotifies, oneAddNotify)
+								}
 							}
+						} else {
+							userfilters.AddNotifies = []model.AddNotify{}
+							userfilters.AddNotifies = append(userfilters.AddNotifies, oneAddNotify)
 						}
-						//save to db
-						byteArray, _ := json.Marshal(userfilters)
-						Data.InsertSlackUserFilter(regionid, string(byteArray))
 					}
+					//save to db
+					byteArray, _ := json.Marshal(userfilters)
+					Data.InsertSlackUserFilter(regionid, string(byteArray))
 				}
-			case "!addallraid":
-				userfilters,err:=getUserFiltersByUserId(userid)
-				if err !=nil{
+			case "!addallraids", "!addraid":
+				userfilters, err := getUserFiltersByUserId(userid)
+				if err != nil {
 					utility.MLog.Error(err)
 				} else {
 					lvlranged, _ := setUserinputAsRange(parts, "lvl")
-					namestr:=setUserInputSingleStringValue(parts,"name")
-					monmovefilter := model.MonMovesFilter{}
-					if namestr!=nil {
-						monid:=utility.MUtility.GetIntFromMap(*namestr,monMap)
-						if monid >0 {
-							monmovefilter.Mon = &model.NameAndID{}
-							monmovefilter.Mon.Id = monid
-							monmovefilter.Mon.Name = *namestr
-							userfilters.AddNotifyRaid.MonMovesFilters = []model.MonMovesFilter{}
-							userfilters.AddNotifyRaid.MonMovesFilters = append(userfilters.AddNotifyRaid.MonMovesFilters,monmovefilter)
+					teamNamestr := setUserInputSingleStringValue(parts, "team")
+					gymNamestr := setUserInputSingleStringValue(parts, "gymname")
+					eggOrRaid := model.EggOrRaid{}
+					if teamNamestr != nil {
+						teamNameAndId := model.NameAndID{Name: *teamNamestr, Id: 1}
+						eggOrRaid = model.EggOrRaid{GymName: gymNamestr, Team: &teamNameAndId, Level: lvlranged}
+					}
+					eggOrRaid = model.EggOrRaid{GymName: gymNamestr, Level: lvlranged}
+					//userfilter does exist
+					userfilters.AddNotifyRaid = &model.AddNotifyRaid{EggOrRaid: eggOrRaid}
+					if strings.EqualFold(a, "!addraid") {
+						namestr := setUserInputSingleStringValue(parts, "name")
+						monmovefilter := model.MonMovesFilter{}
+						if namestr != nil {
+							monid := utility.MUtility.GetIntFromMap(*namestr, monMap)
+							if monid > 0 {
+								monmovefilter.Mon = &model.NameAndID{}
+								monmovefilter.Mon.Id = monid
+								monmovefilter.Mon.Name = *namestr
+								userfilters.AddNotifyRaid.MonMovesFilters = []model.MonMovesFilter{}
+								userfilters.AddNotifyRaid.MonMovesFilters = append(userfilters.AddNotifyRaid.MonMovesFilters, monmovefilter)
+							}
 						}
 					}
-					teamNamestr := setUserInputSingleStringValue(parts, "team")
-					gymNamestr := setUserInputSingleStringValue(parts, "gym")
-					eggOrRaid:=model.EggOrRaid{}
-					if teamNamestr != nil {
-						teamNameAndId:=model.NameAndID{Name:*teamNamestr,Id:1}
-						eggOrRaid=model.EggOrRaid{GymName:gymNamestr,Team:&teamNameAndId,Level:lvlranged}
-					}
-					eggOrRaid=model.EggOrRaid{GymName:gymNamestr, Level:lvlranged}
-					//userfilter does exist
-					userfilters.AddNotifyRaid = &model.AddNotifyRaid{EggOrRaid:eggOrRaid}
 				}
 				//save to db
 				byteArray, _ := json.Marshal(userfilters)
 				Data.InsertSlackUserFilter(regionid, string(byteArray))
-			case "!addraid":
-				cmd := model.AddRaidCmd{}
-				lvlranged, _ := setUserinputAsRange(parts, "lvl")
-				cmd.Lvl = lvlranged
-				namestr := setUserInputSingleStringValue(parts, "name")
-				if namestr != nil {
-					cmd.Name = *namestr
-				}
-				sponsorValue := setUserInputSingleBoolValue(parts, "sponsored")
-				cmd.Sponsored = sponsorValue
-				boostedValue := setUserInputSingleBoolValue(parts, "boosted")
-				cmd.Boosted = boostedValue
-				teamNamestr := setUserInputSingleStringValue(parts, "team")
-				if teamNamestr != nil {
-					cmd.Team = *teamNamestr
-				}
-				gymNamestr := setUserInputSingleStringValue(parts, "gym")
-				if gymNamestr != nil {
-					cmd.GymName = *gymNamestr
-				}
 			case "!addegg":
 				cmd := model.AddEggCmd{}
 				lvlranged, _ := setUserinputAsRange(parts, "lvl")
@@ -469,76 +444,66 @@ func ParseSlackUserInput(userid uint,userInput string, regionid uint, monMap map
 					cmd.GymName = *gymNamestr
 				}
 			case "!showlocation":
-				if isUserInGoodStatus {
-					slackUserFilter, err := Data.GetSlackUserFilter(userid)
-					if err != nil {
+				slackUserFilter, e := Data.GetSlackUserFilter(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					var filters model.Filters
+					if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
 						utility.MLog.Error(err)
-					} else {
-						var filters model.Filters
-						if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
-							utility.MLog.Error(err)
-						}
-						location, _ := json.Marshal(filters.AddLocation)
-						utility.MLog.Debug(string(location))
 					}
+					location, _ := json.Marshal(filters.AddLocation)
+					utility.MLog.Debug(string(location))
 				}
 			case "!showmons":
-				if isUserInGoodStatus {
-					slackUserFilter, err := Data.GetSlackUserFilter(userid)
-					if err != nil {
+				slackUserFilter, e := Data.GetSlackUserFilter(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					var filters model.Filters
+					if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
 						utility.MLog.Error(err)
-					} else {
-						var filters model.Filters
-						if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
-							utility.MLog.Error(err)
-						}
-						allfilter, _ := json.Marshal(filters.AddNotifyAll)
-						utility.MLog.Debug(string(allfilter))
-						filtermon, _ := json.Marshal(filters.AddNotifies)
-						utility.MLog.Debug(string(filtermon))
 					}
+					allfilter, _ := json.Marshal(filters.AddNotifyAll)
+					utility.MLog.Debug(string(allfilter))
+					filtermon, _ := json.Marshal(filters.AddNotifies)
+					utility.MLog.Debug(string(filtermon))
 				}
 			case "!showraid":
-				if isUserInGoodStatus {
-					slackUserFilter, err := Data.GetSlackUserFilter(userid)
-					if err != nil {
+				slackUserFilter, e := Data.GetSlackUserFilter(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					var filters model.Filters
+					if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
 						utility.MLog.Error(err)
-					} else {
-						var filters model.Filters
-						if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
-							utility.MLog.Error(err)
-						}
-						item, _ := json.Marshal(filters.AddNotifyRaid)
-						utility.MLog.Debug(string(item))
 					}
+					item, _ := json.Marshal(filters.AddNotifyRaid)
+					utility.MLog.Debug(string(item))
 				}
 			case "!showegg":
-				if isUserInGoodStatus {
-					slackUserFilter, err := Data.GetSlackUserFilter(userid)
-					if err != nil {
+				slackUserFilter, e := Data.GetSlackUserFilter(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					var filters model.Filters
+					if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
 						utility.MLog.Error(err)
-					} else {
-						var filters model.Filters
-						if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
-							utility.MLog.Error(err)
-						}
-						item, _ := json.Marshal(filters.AddNotifyEgg)
-						utility.MLog.Debug(string(item))
 					}
+					item, _ := json.Marshal(filters.AddNotifyEgg)
+					utility.MLog.Debug(string(item))
 				}
 			case "!showgym":
-				if isUserInGoodStatus {
-					slackUserFilter, err := Data.GetSlackUserFilter(userid)
-					if err != nil {
+				slackUserFilter, e := Data.GetSlackUserFilter(userid)
+				if e != nil {
+					utility.MLog.Error(e)
+				} else {
+					var filters model.Filters
+					if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
 						utility.MLog.Error(err)
-					} else {
-						var filters model.Filters
-						if err := json.Unmarshal([]byte(slackUserFilter.Filters), &filters); err != nil {
-							utility.MLog.Error(err)
-						}
-						item, _ := json.Marshal(filters.AddNotifyGym)
-						utility.MLog.Debug(string(item))
 					}
+					item, _ := json.Marshal(filters.AddNotifyGym)
+					utility.MLog.Debug(string(item))
 				}
 			case "!removelocation":
 			case "!removemons":
